@@ -1,448 +1,964 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Family Meal Planner (Local + Cloud Sync) — Expandable Cards</title>
-  <!-- React CDN -->
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
-  <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
-  <!-- Firebase (compat builds) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%); }
-    .content-wrapper { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
-    .card-container { background: #fff; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,.25); overflow: hidden; }
-    .header-gradient { background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); }
-    .header-container { padding: 2rem; display: flex; justify-content: space-between; align-items: center; gap: 1rem; flex-wrap: wrap; }
-    .header-title { margin: 0; font-size: clamp(1.1rem, 2.2vw, 1.6rem); font-weight: 800; color: #fff; display: flex; align-items: center; gap: .5rem; }
-    .header-subtitle { margin: 0; color: rgba(255,255,255,.9); }
-    .badge { padding: .35rem .6rem; border-radius: 9999px; font-size: .75rem; font-weight: 700; }
-    .badge-success { background: #dcfce7; color: #166534; }
-    .badge-warn { background: #fef9c3; color: #92400e; }
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Meal Planner (Local + Cloud Sync, Expandable Cards)</title>
 
-    .control-bar { padding: 1.5rem; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
-    .control-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
-    .control-group { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
-    .btn { padding: .75rem 1.25rem; border-radius: 1rem; font-weight: 700; display: inline-flex; align-items: center; gap: .5rem; border: none; cursor: pointer; transition: .2s; text-decoration: none; }
-    .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0,0,0,.25); }
-    .btn-primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; }
-    .btn-secondary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: #fff; }
-    .btn-accent { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: #fff; }
-    .btn-neutral { background: #fff; color: #374151; border: 1px solid #d1d5db; }
+    <!-- React CDN -->
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react/18.2.0/umd/react.production.min.js"></script>
+    <script crossorigin src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.2.0/umd/react-dom.production.min.js"></script>
 
-    .form-input { border: 1px solid #d1d5db; border-radius: .75rem; padding: .6rem .9rem; width: 100%; font-size: 1rem; }
-    .form-input:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249,115,22,.12); }
+    <!-- Firebase (compat builds for simplicity) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 
-    .search-container { position: relative; flex: 1; }
-    .search-input { padding-left: 3rem; width: 100%; max-width: 600px; border: 1px solid #d1d5db; border-radius: 1rem; background: #fff; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); padding: 1rem 1rem 1rem 3rem; font-size: 1rem; }
-    .search-icon { position: absolute; left: .75rem; top: 50%; transform: translateY(-50%); color: #9ca3af; }
+    <style>
+        /* Reset and Base Styles */
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue', sans-serif;
+            background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%);
+            min-height: 100vh;
+        }
 
-    .btn-filter { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); color: #fff; font-weight: 800; border: none; box-shadow: 0 4px 10px rgba(0,0,0,.15); }
-    .btn-filter:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(0,0,0,.25); }
-    .btn-filter.active { border: 2px solid #f59e0b; background: #fff; color: #d97706; }
+        .main-container { min-height: 100vh; background: linear-gradient(135deg, #fff7ed 0%, #fef2f2 100%); }
+        .content-wrapper { max-width: 1200px; margin: 0 auto; padding: 2rem 1rem; }
+        .card-container { background: white; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); overflow: hidden; }
 
-    .filter-panel { margin-top: 1rem; padding: 1rem; background: #fff; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0,0,0,.1); }
-    .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
+        .header-gradient { background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); }
+        .header-container { padding: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
+        .header-title { font-size: 2.25rem; font-weight: bold; color: white; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.75rem; }
+        .header-subtitle { color: rgba(255, 255, 255, 0.9); font-size: 0.95rem; margin: 0; }
 
-    .recipes-container { padding: 1.5rem; }
-    .recipes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem; }
-    .recipe-card { background: #fff; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0,0,0,.1); overflow: hidden; border: 1px solid #f3f4f6; transition: .3s; }
-    .recipe-card:hover { box-shadow: 0 25px 50px -12px rgba(0,0,0,.25); border-color: #fed7aa; }
-    .recipe-video { height: 192px; background: #f3f4f6; }
-    .recipe-content { padding: 1.25rem; }
-    .recipe-header { display: flex; justify-content: space-between; align-items: flex-start; gap: .75rem; margin-bottom: .75rem; }
-    .recipe-title { margin: 0; font-size: 1.15rem; font-weight: 800; color: #1f2937; }
-    .recipe-actions { display: flex; gap: .5rem; align-items: center; }
+        .recipe-counter { 
+            background: rgba(255, 255, 255, 0.2); 
+            backdrop-filter: blur(4px); 
+            border-radius: 1rem; 
+            padding: 0.75rem 1.5rem; 
+            display: flex; 
+            align-items: center; 
+            gap: 1rem; 
+            color: white; 
+        }
+        .recipe-count { font-size: 1rem; font-weight: bold; margin: 0; }
+        .recipe-label { font-size: 0.875rem; opacity: 0.9; margin: 0; }
+        .recipe-status { font-size: 0.75rem; opacity: 0.8; margin: 0; }
 
-    .action-btn { padding: .5rem; border: none; border-radius: .5rem; cursor: pointer; transition: background .2s; }
-    .edit-btn { color: #2563eb; background: #eff6ff; }
-    .edit-btn:hover { background: #dbeafe; }
-    .trash-btn { color: #dc2626; background: #fef2f2; }
-    .trash-btn:hover { background: #fee2e2; }
+        .control-bar { padding: 1.5rem; background: #f9fafb; border-bottom: 1px solid #e5e7eb; }
+        .control-row { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
+        .control-group { display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; }
 
-    .recipe-tags { display: flex; flex-wrap: wrap; gap: .5rem; margin-bottom: .5rem; }
-    .tag { padding: .25rem .6rem; border-radius: 9999px; font-size: .85rem; font-weight: 600; }
-    .tag-category { background: #dbeafe; color: #1e40af; }
-    .tag-type { background: #dcfce7; color: #166534; }
-    .tag-purpose { background: #f3e8ff; color: #7c2d12; }
+        .btn { padding: 0.75rem 1.25rem; border-radius: 1rem; font-weight: 600; display: inline-flex; align-items: center; gap: 0.5rem; border: none; cursor: pointer; transition: all 0.2s; text-decoration: none; }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.25); }
+        .btn-primary { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: white; }
+        .btn-secondary { background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%); color: white; }
+        .btn-accent { background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%); color: white; }
+        .btn-neutral { background: white; color: #374151; border: 1px solid #d1d5db; }
+        .btn-neutral:hover { background: #f9fafb; }
+        .btn-sm { padding: 0.5rem 0.875rem; border-radius: 0.75rem; font-size: 0.9rem; }
 
-    .section-title-small { margin: 0; font-weight: 700; color: #374151; }
-    .ingredient-list { display: flex; flex-direction: column; gap: .25rem; font-size: .95rem; color: #4b5563; }
-    .ingredient-item { display: flex; justify-content: space-between; gap: .5rem; }
-    .ingredient-amount { font-weight: 600; }
-    .more-items { color: #9ca3af; font-style: italic; }
+        .badge { padding: 0.35rem 0.6rem; border-radius: 9999px; font-size: 0.75rem; font-weight: 700; margin-left: 0.5rem; }
+        .badge-success { background: #dcfce7; color: #166534; }
+        .badge-warn { background: #fef9c3; color: #92400e; }
+        .badge-danger { background: #fee2e2; color: #991b1b; }
+        .small { font-size: 0.85rem; color: #6b7280; }
 
-    /* Expand/Collapse */
-    .expand-toggle { background: linear-gradient(135deg, #10b981 0%, #059669 100%); color: #fff; border: none; border-radius: .6rem; padding: .5rem .8rem; font-weight: 800; cursor: pointer; box-shadow: 0 4px 10px rgba(0,0,0,.12); }
-    .expand-toggle:hover { transform: translateY(-2px); box-shadow: 0 10px 22px rgba(0,0,0,.18); }
-    .recipe-details { margin-top: .5rem; }
-    .recipe-details.collapsed .line { display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+        .form-group { display: flex; align-items: center; gap: 0.5rem; background: white; border-radius: 1rem; padding: 0.5rem 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .form-input { border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.75rem 1rem; width: 100%; font-size: 1rem; }
+        .form-input:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
+        .search-input { padding-left: 3rem; width: 100%; max-width: 600px; border: 1px solid #d1d5db; border-radius: 1rem; background: white; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); padding: 1rem 1rem 1rem 3rem; font-size: 1rem; }
+        .search-container { flex: 1; max-width: 1000px;}
 
-    .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
-    .modal-container { background: #fff; border-radius: 1.25rem; box-shadow: 0 25px 50px -12px rgba(0,0,0,.25); max-width: 48rem; width: 100%; max-height: 90vh; overflow-y: auto; }
-    .modal-header { padding: 1rem 1.25rem; border-bottom: 1px solid #e5e7eb; background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); color: #fff; }
-    .modal-title { margin: 0; font-size: 1.15rem; font-weight: 800; }
-    .modal-body { padding: 1.25rem; }
-    .modal-actions { display: flex; justify-content: flex-end; gap: .5rem; padding: 0 1.25rem 1.25rem; }
+        .filter-panel { margin-top: 1rem; padding: 1rem; background: white; border-radius: 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+        .filter-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; }
 
-    .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
-    .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
-    .hidden { display: none; }
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0, 0, 0, 0.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
+        .modal-container { background: white; border-radius: 1.5rem; box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); max-width: 48rem; width: 100%; max-height: 90vh; overflow-y: auto; }
+        .modal-header { padding: 1rem 1.25rem; border-bottom: 1px solid #e5e7eb; background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); color: white; }
+        .modal-title { font-size: 1.25rem; font-weight: 700; margin: 0; }
+        .modal-body { padding: 1.25rem; }
+        .modal-actions { display: flex; justify-content: flex-end; gap: 0.5rem; padding: 0 1.25rem 1.25rem 1.25rem; }
 
-    @media (max-width: 768px) {
-      .control-row { flex-direction: column; align-items: stretch; }
-      .control-group .btn { width: 100%; justify-content: center; }
-      .control-bar > div:nth-child(3) { flex-direction: row !important; gap: .5rem !important; align-items: center !important; justify-content: flex-start !important; }
-      .control-bar > div:nth-child(3) .btn span { display: none; }
-      .recipes-grid { grid-template-columns: 1fr; gap: 1.25rem; }
-      .search-input { width: 100%; font-size: .95rem; padding: .75rem .875rem .75rem 2.25rem; }
-      .search-icon { left: .625rem; font-size: .9rem; }
-    }
-  </style>
+        .recipes-container { padding: 1.5rem; }
+        .recipes-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(350px, 1fr)); gap: 2rem; }
+        .recipe-card { background: white; border-radius: 1rem; box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1); overflow: hidden; border: 1px solid #f3f4f6; transition: all 0.3s; }
+        .recipe-card:hover { box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25); border-color: #fed7aa; }
+        .recipe-video { height: 192px; background: #f3f4f6; }
+        .recipe-content { padding: 1.25rem 1.25rem 0.75rem; }
+        .recipe-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
+        .recipe-title { font-size: 1.15rem; font-weight: 700; color: #1f2937; margin: 0; flex: 1; margin-right: 1rem; }
+        .recipe-actions { display: flex; gap: 0.5rem; }
+
+        .action-btn { padding: 0.5rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s; }
+        .edit-btn { color: #2563eb; background: #eff6ff; }
+        .edit-btn:hover { background: #dbeafe; }
+        .trash-btn { color: #dc2626; background: #fef2f2; }
+        .trash-btn:hover { background: #fee2e2; }
+
+        .recipe-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-bottom: 0.75rem; }
+        .tag { padding: 0.25rem 0.75rem; border-radius: 9999px; font-size: 0.875rem; font-weight: 500; }
+        .tag-category { background: #dbeafe; color: #1e40af; }
+        .tag-type { background: #dcfce7; color: #166534; }
+        .tag-purpose { background: #f3e8ff; color: #7c2d12; }
+
+        .recipe-section { margin-bottom: 0.75rem; }
+        .section-header-small { display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.4rem; }
+        .section-title-small { font-weight: 600; color: #374151; margin: 0; font-size: 0.95rem; }
+        .ingredient-list, .instruction-preview, .instruction-list { font-size: 0.9rem; color: #4b5563; }
+        .ingredient-list { display: flex; flex-direction: column; gap: 0.25rem; }
+        .ingredient-item { display: flex; justify-content: space-between; gap: 0.75rem; }
+        .ingredient-name { flex: 1; }
+        .ingredient-amount { font-weight: 600; }
+        .more-items { color: #9ca3af; font-style: italic; }
+
+        .btn-group { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+        .btn-cancel { padding: 0.75rem 1.5rem; border: 1px solid #d1d5db; background: white; color: #374151; border-radius: 0.75rem; font-weight: 600; cursor: pointer; transition: background 0.2s; }
+        .btn-cancel:hover { background: #f9fafb; }
+        .btn-save { padding: 0.75rem 1.5rem; background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); color: white; border: none; border-radius: 0.75rem; font-weight: 600; cursor: pointer; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
+
+        .line-clamp-2 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 2; }
+        .line-clamp-3 { overflow: hidden; display: -webkit-box; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+        .hidden { display: none; }
+
+        .btn-filter {
+            background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%);
+            color: white;
+            font-weight: 700;
+            border: none;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+        }
+        .btn-filter:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0,0,0,0.25);
+        }
+        .btn-filter.active { border: 2px solid #f59e0b; background: white; color: #d97706; }
+
+        /* Expand/collapse affordance */
+        .expand-footer {
+            display: flex;
+            justify-content: flex-end;
+            padding: 0.75rem 1.25rem 1.25rem;
+            border-top: 1px dashed #e5e7eb;
+        }
+        .expand-hint {
+            font-size: 0.85rem;
+            color: #6b7280;
+        }
+
+        /* Enhanced mobile responsiveness */
+        @media (max-width: 768px) {
+            .content-wrapper { padding: 1rem 0.5rem; }
+            .header-container { 
+                flex-direction: column; 
+                text-align: center; 
+                padding: 1.25rem 1rem;
+                gap: 1.25rem;
+            }
+            .header-title { 
+                font-size: clamp(1.5rem, 4vw, 2rem);
+                line-height: 1.2;
+                flex-wrap: wrap;
+                justify-content: center;
+                align-items: center;
+            }
+            .header-subtitle { font-size: 0.85rem; line-height: 1.6; }
+            .header-title .badge { margin-left: 0.75rem; vertical-align: middle; }
+            .control-bar { padding: 1rem; }
+            .control-row { flex-direction: column; align-items: stretch; gap: 1rem; }
+            .control-group { flex-direction: column; width: 100%; gap: 0.75rem; }
+            .control-group .btn { width: 100%; justify-content: center; }
+
+            .form-group { justify-content: center; padding: 0.75rem; width: 100%; }
+            .form-group input[type="number"] { width: 4rem; margin-left: 0.5rem; }
+
+            .control-bar > div:nth-child(2) {
+                flex-direction: column;
+                gap: 0.75rem;
+                align-items: stretch;
+                text-align: center;
+            }
+            .control-bar > div:nth-child(2) > div:first-child {
+                display: flex; gap: 0.25rem; align-items: center; justify-content: center;
+                flex-wrap: nowrap; overflow-x: auto; max-width: 100%; box-sizing: border-box; padding: 0.25rem 0;
+            }
+            .control-bar > div:nth-child(2) > div:first-child .small { display: none; }
+            .control-bar > div:nth-child(2) > div:first-child .form-input {
+                min-width: 70px; max-width: 85px; padding: 0.4rem 0.5rem; font-size: 0.75rem; flex-shrink: 0;
+            }
+            .control-bar > div:nth-child(2) > div:first-child .btn {
+                padding: 0.4rem 0.6rem; font-size: 0.7rem; flex-shrink: 0; white-space: nowrap; min-width: auto;
+            }
+            .control-bar > div:nth-child(2) > div:last-child { font-size: 0.7rem; opacity: 0.8; }
+
+            .control-bar > div:nth-child(3) { flex-direction: row !important; gap: 0.5rem !important; align-items: center !important; justify-content: flex-start !important; }
+            .search-container { flex: 1; min-width: 0; max-width: 600px; }
+            .search-input { width: 100%; font-size: 0.875rem; padding: 0.75rem 0.875rem 0.75rem 2.25rem; }
+            .control-bar > div:nth-child(3) .btn { padding: 0.75rem 0.875rem; flex-shrink: 0; }
+            .control-bar > div:nth-child(3) .btn span { display: none; }
+            .filter-panel { margin-top: 0.75rem; padding: 0.75rem; }
+            .filter-grid { grid-template-columns: 1fr; gap: 0.75rem; }
+            .recipes-grid { grid-template-columns: 1fr; gap: 1.5rem; }
+            .recipes-container { padding: 1rem; }
+
+            .modal-overlay { padding: 0.5rem; }
+            .modal-container { max-width: calc(100vw - 1rem); margin: 0; }
+            .modal-header { padding: 1rem; }
+            .modal-body { padding: 1rem; }
+            .modal-actions { padding: 0 1rem 1rem 1rem; flex-direction: column; gap: 0.75rem; }
+            .modal-actions .btn { width: 100%; justify-content: center; }
+            .form-grid { grid-template-columns: 1fr !important; }
+        }
+        
+        @media (max-width: 480px) {
+            .header-title { font-size: clamp(1.25rem, 3.5vw, 1.75rem); }
+            .search-input { padding: 0.625rem 0.75rem 0.625rem 2rem; font-size: 0.8rem; }
+            .control-group .btn { padding: 0.625rem 1rem; font-size: 0.875rem; }
+            .control-bar > div:nth-child(2) > div:first-child { gap: 0.2rem; }
+            .control-bar > div:nth-child(2) > div:first-child .form-input {
+                min-width: 60px; max-width: 75px; padding: 0.35rem 0.4rem; font-size: 0.7rem;
+            }
+            .control-bar > div:nth-child(2) > div:first-child .btn { padding: 0.35rem 0.5rem; font-size: 0.65rem; }
+            .control-bar > div:nth-child(3) .btn { padding: 0.625rem 0.75rem; }
+        }
+
+        @media (max-width: 768px) and (orientation: landscape) {
+            .header-container { flex-direction: row; text-align: left; padding: 1rem; }
+            .header-title { font-size: 1.5rem; }
+            .recipe-counter { min-width: 120px; }
+        }
+    </style>
 </head>
 <body>
-  <div id="root">
-    <div class="content-wrapper">
-      <div class="card-container">
-        <div class="header-gradient">
-          <div class="header-container">
-            <div>
-              <h1 class="header-title">Family Meal Planner <span id="storageBadge" class="badge badge-warn">Local</span></h1>
-              <p class="header-subtitle">Organize your recipes • Local-first • Optional cloud sync</p>
+<div id="root">
+    <div class="main-container">
+        <div class="content-wrapper">
+            <div class="card-container">
+                <div class="header-gradient">
+                    <div class="header-container">
+                        <div>
+                            <h1 class="header-title">Family Meal Planner</h1>
+                            <p class="header-subtitle">Local-first recipes with optional Firebase sync across devices</p>
+                        </div>
+                        <div id="syncSummary" class="recipe-counter">
+                            <div class="recipe-count" id="syncModeLabel">Local</div>
+                            <div class="recipe-label">Storage Mode</div>
+                            <div class="small" id="syncStatusText">Not connected</div>
+                        </div>
+                    </div>
+                </div>
+                <div style="padding: 2rem; text-align: center;">
+                    <p>Please wait while the app loads...</p>
+                    <p style="color: #666; font-size: 0.9rem;">If this message persists, please check your JavaScript is enabled.</p>
+                </div>
             </div>
-            <div id="syncSummary" class="badge" style="background: rgba(255,255,255,.2); color:#fff;">Not connected</div>
-          </div>
         </div>
-        <div style="padding: 2rem; text-align: center;">
-          <p>Please wait while the app loads...</p>
-          <p style="color:#666; font-size:.9rem;">If this message persists, please check your JavaScript is enabled.</p>
-        </div>
-      </div>
     </div>
-  </div>
+</div>
 
-  <script>
-    const { useState, useEffect, useMemo, useRef } = React;
-    const { createRoot } = ReactDOM;
+<script>
+/** ===== Simple SVG icons ===== */
+const { useState, useEffect, useMemo, useRef } = React;
+const { createRoot } = ReactDOM;
+const Icon = (d, props={}) => React.createElement('svg', {width: props.size||'20', height: props.size||'20', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', className: props.className||''}, ...d);
+const Plus  = (p={}) => Icon([React.createElement('line',{x1:12,y1:5,x2:12,y2:19}),
+                               React.createElement('line',{x1:5,y1:12,x2:19,y2:12})], p);
+const Edit2 = (p={}) => Icon([React.createElement('path',{d:'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'}),
+                               React.createElement('path',{d:'m18.5 2.5 3 3L21 6l-3-3z'}),
+                               React.createElement('path',{d:'m21 6-4 4'})], p);
+const Trash2= (p={}) => Icon([React.createElement('polyline',{points:'3,6 5,6 21,6'}),
+                               React.createElement('path',{d:'m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'}),
+                               React.createElement('line',{x1:10,y1:11,x2:10,y2:17}),
+                               React.createElement('line',{x1:14,y1:11,x2:14,y2:17})], p);
+const Users = (p={}) => Icon([React.createElement('path',{d:'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2'}),
+                               React.createElement('circle',{cx:9,cy:7,r:4}),
+                               React.createElement('path',{d:'M22 21v-2a4 4 0 0 0-3-3.87'}),
+                               React.createElement('path',{d:'M16 3.13a4 4 0 0 1 0 7.75'})], p);
+const Clock = (p={}) => Icon([React.createElement('circle',{cx:12,cy:12,r:10}),
+                               React.createElement('polyline',{points:'12,6 12,12 16,14'})], p);
+const ChefHat=(p={}) => Icon([React.createElement('path',{d:'M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z'}),
+                               React.createElement('line',{x1:6,y1:17,x2:18,y2:17})], p);
+const Filter = (p={}) => Icon([React.createElement('polygon',{points:'22,3 2,3 10,12.46 10,19 14,21 14,12.46'})], p);
+const X      = (p={}) => Icon([React.createElement('line',{x1:18,y1:6,x2:6,y2:18}),
+                               React.createElement('line',{x1:6,y1:6,x2:18,y2:18})], p);
+const Download = (p={}) => Icon([React.createElement('path',{d:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'}),
+                                 React.createElement('polyline',{points:'7,10 12,15 17,10'}),
+                                 React.createElement('line',{x1:12,y1:15,x2:12,y2:3})], p);
+const Upload = (p={}) => Icon([React.createElement('path',{d:'M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4'}),
+                               React.createElement('polyline',{points:'17,8 12,3 7,8'}),
+                               React.createElement('line',{x1:12,y1:3,x2:12,y2:15})], p);
+const FileText = (p={}) => Icon([React.createElement('path',{d:'M14 3v4a1 1 0 0 0 1 1h4'}),
+                                 React.createElement('path',{d:'M14 3L20 9V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8z'}),
+                                 React.createElement('line',{x1:16,y1:13,x2:8,y2:13}),
+                                 React.createElement('line',{x1:16,y1:17,x2:8,y2:17}),
+                                 React.createElement('polyline',{points:'10,9 9,9 8,9'})], p);
+const Gear = (p={}) => Icon([React.createElement('circle',{cx:12,cy:12,r:3}),
+                              React.createElement('path',{d:'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 8 19.55a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 15 1.65 1.65 0 0 0 2.09 14H2a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 3.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 6.04 3.3l.06.06A1.65 1.65 0 0 0 7.92 3h.18A1.65 1.65 0 0 0 9 2.09V2a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 14.1 3h.18a1.65 1.65 0 0 0 1.82-.33l.06-.06A2 2 0 1 1 18.9 6.04l-.06.06A1.65 1.65 0 0 0 19.7 8c.29.5.44 1.07.44 1.65s-.15 1.15-.44 1.65z'})], p);
+const RefreshCw = (p={}) => Icon([React.createElement('polyline',{points:'23,4 23,10 17,10'}),
+                                  React.createElement('polyline',{points:'1,20 1,14 7,14'}),
+                                  React.createElement('path',{d:'M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15'})], p);
 
-    const Icon = (children, props={}) => React.createElement(
-      'svg', { width: props.size||'20', height: props.size||'20', viewBox:'0 0 24 24', fill:'none', stroke:'currentColor', strokeWidth:'2', strokeLinecap:'round', strokeLinejoin:'round', className: props.className||'' }, ...children
-    );
-    const Plus  = (p={}) => Icon([React.createElement('line',{x1:12,y1:5,x2:12,y2:19}), React.createElement('line',{x1:5,y1:12,x2:19,y2:12})], p);
-    const Edit2 = (p={}) => Icon([React.createElement('path',{d:'M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'}), React.createElement('path',{d:'m18.5 2.5 3 3L21 6l-3-3z'}), React.createElement('path',{d:'m21 6-4 4'})], p);
-    const Trash2= (p={}) => Icon([React.createElement('polyline',{points:'3,6 5,6 21,6'}), React.createElement('path',{d:'m19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2'}), React.createElement('line',{x1:10,y1:11,x2:10,y2:17}), React.createElement('line',{x1:14,y1:11,x2:14,y2:17})], p);
-    const ChefHat=(p={}) => Icon([React.createElement('path',{d:'M6 13.87A4 4 0 0 1 7.41 6a5.11 5.11 0 0 1 1.05-1.54 5 5 0 0 1 7.08 0A5.11 5.11 0 0 1 16.59 6 4 4 0 0 1 18 13.87V21H6Z'}), React.createElement('line',{x1:6,y1:17,x2:18,y2:17})], p);
-    const Filter = (p={}) => Icon([React.createElement('polygon',{points:'22,3 2,3 10,12.46 10,19 14,21 14,12.46'})], p);
-    const Gear = (p={}) => Icon([React.createElement('circle',{cx:12,cy:12,r:3}), React.createElement('path',{d:'M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 8 19.55a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.6 15 1.65 1.65 0 0 0 2.09 14H2a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 3.6 8a1.65 1.65 0 0 0-.33-1.82l-.06-.06A2 2 0 1 1 6.04 3.3l.06.06A1.65 1.65 0 0 0 7.92 3h.18A1.65 1.65 0 0 0 9 2.09V2a2 2 0 1 1 4 0v.09A1.65 1.65 0 0 0 14.1 3h.18a1.65 1.65 0 0 0 1.82-.33l.06-.06A2 2 0 1 1 18.9 6.04l-.06.06A1.65 1.65 0 0 0 19.7 8c.29.5.44 1.07.44 1.65s-.15 1.15-.44 1.65z'})], p);
-    const RefreshCw = (p={}) => Icon([React.createElement('polyline',{points:'23,4 23,10 17,10'}), React.createElement('polyline',{points:'1,20 1,14 7,14'}), React.createElement('path',{d:'M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15'})], p);
-
-    const LOCAL_KEY = 'familyMealPlannerRecipes';
-    const META_KEY  = 'familyMealPlannerMeta';
-    const DEFAULT_SAMPLE = [{
-      id: 1,
-      name: "Spaghetti Carbonara",
-      category: "Italian",
-      type: "Pasta",
-      purpose: "Meal",
-      videoUrl: "https://www.youtube.com/watch?v=3AAdKl1UYZs",
-      ingredients: [
+/** ===== Local + Cloud storage layer ===== */
+const LOCAL_KEY = 'familyMealPlannerRecipes';
+const META_KEY = 'familyMealPlannerMeta'; // track lastUpdated locally
+const DEFAULT_SAMPLE = [{
+    id: 1,
+    name: "Spaghetti Carbonara",
+    category: "Italian",
+    type: "Pasta",
+    purpose: "Meal",
+    videoUrl: "https://www.youtube.com/embed/3AAdKl1UYZs",
+    ingredients: [
         { name: "Spaghetti", quantity: "400", unit: "g" },
         { name: "Eggs", quantity: "4", unit: "pieces" },
         { name: "Parmesan cheese", quantity: "100", unit: "g" },
         { name: "Pancetta", quantity: "150", unit: "g" },
-        { name: "Black pepper", quantity: "1", unit: "tsp" }
-      ],
-      instructions: [
+        { name: "Black pepper", quantity: "1", unit: "tsp" },
+        { name: "Salt", quantity: "0.5", unit: "tsp" }
+    ],
+    instructions: [
         "Boil spaghetti in salted water until al dente.",
         "Cook pancetta until crispy.",
         "Mix eggs with grated parmesan.",
-        "Combine hot pasta with pancetta and egg mixture off heat.",
-        "Season and serve immediately."
-      ]
-    }];
+        "Combine hot pasta with pancetta and egg mixture.",
+        "Serve immediately with black pepper."
+    ]
+}];
 
-    function nowIso(){ return new Date().toISOString(); }
+function nowIso(){ return new Date().toISOString(); }
 
-    let fb = { app:null, auth:null, db:null, user:null, unsub:null };
-    let cloudEnabled = false;
-    let preventLoop = false;
+// Firebase globals
+let fb = { app:null, auth:null, db:null, user:null, unsub:null };
+let cloudEnabled = false;
+let preventLoop = false;
 
-    function setSyncHeader(mode, text){
-      const badge = document.getElementById('storageBadge');
-      if (badge) {
-        badge.textContent = mode;
-        badge.className = 'badge ' + (mode==='Cloud' ? 'badge-success' : 'badge-warn');
-      }
-      const box = document.getElementById('syncSummary');
-      if (box) box.textContent = text || '';
-    }
+// Helper: update header status
+function setSyncHeader(mode, text, badge) {
+    try {
+        const modeNode = document.getElementById('syncModeLabel');
+        const textNode = document.getElementById('syncStatusText');
+        if (modeNode) modeNode.textContent = mode;
+        if (textNode) textNode.textContent = text || '';
+        const box = document.getElementById('syncSummary');
+        if (box) {
+            box.classList.remove('badge-success','badge-warn','badge-danger');
+        }
+    } catch(e){}
+}
 
-    async function initFirebaseIfPossible(cfg=null){
-      try{
-        const config = cfg || window.FAMILY_MEAL_PLANNER_FIREBASE_CONFIG || JSON.parse(localStorage.getItem('fmp_firebase_config')||'null');
-        if (!config) { setSyncHeader('Local','Not connected'); return {ok:false}; }
-        if (!firebase?.apps?.length) fb.app = firebase.initializeApp(config); else fb.app = firebase.app();
+// Initialize Firebase using either a global constant or saved config
+async function initFirebaseIfPossible(configFromUser=null) {
+    try {
+        const cfg = configFromUser || window.FAMILY_MEAL_PLANNER_FIREBASE_CONFIG || JSON.parse(localStorage.getItem('fmp_firebase_config')||'null');
+        if (!cfg) {
+            setSyncHeader('Local', 'Not connected');
+            return { ok:false, reason:'No firebase config' };
+        }
+        if (!firebase?.apps?.length) {
+            fb.app = firebase.initializeApp(cfg);
+        } else {
+            fb.app = firebase.app();
+        }
         fb.auth = firebase.auth();
-        fb.db   = firebase.firestore();
-        if (!fb.auth.currentUser) await fb.auth.signInAnonymously();
-        fb.user = fb.auth.currentUser; cloudEnabled = !!fb.user; setSyncHeader('Cloud','Connected');
-        return {ok:true};
-      }catch(e){ console.error(e); cloudEnabled=false; setSyncHeader('Local','Cloud unavailable'); return {ok:false}; }
+        fb.db = firebase.firestore();
+        if (!fb.auth.currentUser) {
+            await fb.auth.signInAnonymously();
+        }
+        fb.user = fb.auth.currentUser;
+        cloudEnabled = !!fb.user;
+        localStorage.setItem('fmp_firebase_config', JSON.stringify(cfg));
+        setSyncHeader('Cloud', 'Connected');
+        return { ok:true };
+    } catch (e) {
+        console.error('Firebase init error:', e);
+        cloudEnabled = false;
+        setSyncHeader('Local', 'Cloud unavailable');
+        return { ok:false, reason:e?.message||'init fail' };
     }
+}
 
-    function getDocRef(){ const uid = fb?.user?.uid || 'public'; return fb.db.collection('familyMealPlanner').doc(uid); }
+// Firestore document path for this app
+function getDocRef() {
+    const uid = fb?.user?.uid || 'public';
+    return fb.db.collection('familyMealPlanner').doc(uid);
+}
 
-    function readLocal(){
-      try{ const raw = localStorage.getItem(LOCAL_KEY); const meta = JSON.parse(localStorage.getItem(META_KEY)||'{"lastUpdated":null}');
+// Read from local storage
+function readLocal() {
+    try {
+        const raw = localStorage.getItem(LOCAL_KEY);
+        const meta = JSON.parse(localStorage.getItem(META_KEY) || '{"lastUpdated": null}');
         if (!raw) return { recipes: DEFAULT_SAMPLE, lastUpdated: meta.lastUpdated || nowIso() };
-        const arr = JSON.parse(raw); return { recipes: Array.isArray(arr)?arr:DEFAULT_SAMPLE, lastUpdated: meta.lastUpdated || nowIso() };
-      }catch(e){ return { recipes: DEFAULT_SAMPLE, lastUpdated: nowIso() }; }
+        const arr = JSON.parse(raw);
+        return { recipes: Array.isArray(arr) ? arr : DEFAULT_SAMPLE, lastUpdated: meta.lastUpdated || nowIso() };
+    } catch(e){
+        console.warn('Local read failed, using sample:', e);
+        return { recipes: DEFAULT_SAMPLE, lastUpdated: nowIso() };
     }
-    function writeLocal(recipes){ try{ localStorage.setItem(LOCAL_KEY, JSON.stringify(recipes)); localStorage.setItem(META_KEY, JSON.stringify({lastUpdated: nowIso()})); }catch(e){} }
+}
 
-    async function readCloudOnce(){ if (!cloudEnabled) return null; const snap = await getDocRef().get(); if (!snap.exists) return null; const d = snap.data(); return { recipes: Array.isArray(d?.recipes)?d.recipes:[], lastUpdated: d?.lastUpdated||null }; }
-    async function writeCloud(recipes){ if (!cloudEnabled) return; await getDocRef().set({ recipes, lastUpdated: nowIso() }, { merge:true }); }
-    function subscribeCloud(onData){ if (!cloudEnabled) return; if (fb.unsub) fb.unsub(); fb.unsub = getDocRef().onSnapshot(s=>{ const d=s.data(); if(!d) return; onData({recipes:Array.isArray(d.recipes)?d.recipes:[], lastUpdated:d.lastUpdated||null}); }); }
+// Save to local storage
+function writeLocal(recipes) {
+    try {
+        localStorage.setItem(LOCAL_KEY, JSON.stringify(recipes));
+        localStorage.setItem(META_KEY, JSON.stringify({ lastUpdated: nowIso() }));
+    } catch(e){ console.error('Local write failed', e); }
+}
 
-    function App(){
-      const [recipes, setRecipes] = useState([]);
-      const [currentRecipe, setCurrentRecipe] = useState({ name:'', category:'', type:'', purpose:'', videoUrl:'', ingredients:[{name:'',quantity:'',unit:''}], instructions:[''] });
-      const [showForm, setShowForm] = useState(false);
-      const [editingId, setEditingId] = useState(null);
-      const [searchTerm, setSearchTerm] = useState('');
-      const [filters, setFilters] = useState({ category:'', type:'', purpose:'' });
-      const [familySize, setFamilySize] = useState(4);
-      const [showFilters, setShowFilters] = useState(false);
-      const [storageMode, setStorageMode] = useState('Local');
-      const [syncInfo, setSyncInfo] = useState({ status:'Not connected', lastSync:null });
-      const [configJson, setConfigJson] = useState(localStorage.getItem('fmp_firebase_config') || '');
-      const [expandedIds, setExpandedIds] = useState(new Set()); // NEW
+// Pull from Firestore
+async function readCloudOnce() {
+    if (!cloudEnabled) return null;
+    const snap = await getDocRef().get();
+    if (!snap.exists) return null;
+    const data = snap.data();
+    return { recipes: Array.isArray(data?.recipes) ? data.recipes : [], lastUpdated: data?.lastUpdated || null };
+}
 
-      const categories = ['Italian','Asian','Mexican','American','French','Mediterranean','Indian','Chinese'];
-      const types = ['Pasta','Meat','Vegetable','Soup','Salad','Rice','Chicken','Beef','Seafood','Cake','Cookies'];
-      const purposes = ['Breakfast','Meal','Dessert','Snack','Appetizer'];
-      const units = ['g','kg','ml','l','cups','tbsp','tsp','pieces','slices'];
+// Push to Firestore
+async function writeCloud(recipes) {
+    if (!cloudEnabled) return;
+    await getDocRef().set({ recipes, lastUpdated: nowIso() }, { merge: true });
+}
 
-      const lastCloudDataRef = useRef(null);
+// Start a realtime listener; feeds callback with latest cloud data
+function subscribeCloud(onData) {
+    if (!cloudEnabled) return;
+    if (fb.unsub) fb.unsub(); // clear old
+    fb.unsub = getDocRef().onSnapshot((snap)=>{
+        const data = snap.data();
+        if (!data) return;
+        onData({ recipes: Array.isArray(data.recipes) ? data.recipes : [], lastUpdated: data.lastUpdated || null });
+    });
+}
 
-      useEffect(()=>{
-        const local = readLocal(); setRecipes(local.recipes); setSyncInfo({ status:'Loaded local', lastSync: local.lastUpdated }); setSyncHeader('Local','Loaded from local');
-        (async ()=>{
-          const init = await initFirebaseIfPossible();
-          if (init.ok){
-            setStorageMode('Cloud'); setSyncInfo(s=>({...s,status:'Connected'}));
-            const cloud = await readCloudOnce();
-            const localMeta = JSON.parse(localStorage.getItem(META_KEY)||'{"lastUpdated":null}');
-            const localTime = Date.parse(localMeta.lastUpdated||0); const cloudTime = Date.parse(cloud?.lastUpdated||0);
-            if (cloud && cloud.recipes && cloud.recipes.length){
-              if (!localTime || cloudTime >= localTime){ setRecipes(cloud.recipes); writeLocal(cloud.recipes); setSyncInfo({ status:'Synced from cloud', lastSync: cloud.lastUpdated }); }
-              else { await writeCloud(local.recipes); setSyncInfo({ status:'Pushed local to cloud', lastSync: nowIso() }); }
-            } else { await writeCloud(local.recipes); setSyncInfo({ status:'Seeded cloud from local', lastSync: nowIso() }); }
-            subscribeCloud(({recipes:r,lastUpdated})=>{ if (preventLoop) return; lastCloudDataRef.current={r,lastUpdated}; const localMeta2=JSON.parse(localStorage.getItem(META_KEY)||'{"lastUpdated":null}'); const localTime2=Date.parse(localMeta2.lastUpdated||0); const cloudTime2=Date.parse(lastUpdated||0); if (cloudTime2 && (!localTime2 || cloudTime2>=localTime2)){ preventLoop=true; setRecipes(r); writeLocal(r); setSyncInfo({status:'Live update from cloud', lastSync:lastUpdated}); setTimeout(()=>preventLoop=false,200); } });
-          }
+function FamilyMealPlannerApp(){
+    const [recipes, setRecipes] = useState([]);
+    const [currentRecipe, setCurrentRecipe] = useState({ name:'', category:'', type:'', purpose:'', videoUrl:'', ingredients:[{name:'',quantity:'',unit:''}], instructions:[''] });
+    const [showForm, setShowForm] = useState(false);
+    const [editingId, setEditingId] = useState(null);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [filters, setFilters] = useState({ category:'', type:'', purpose:'' });
+    const [familySize, setFamilySize] = useState(4);
+    const [showFilters, setShowFilters] = useState(false);
+    const [storageMode, setStorageMode] = useState('Local'); // 'Local' | 'Cloud'
+    const [syncInfo, setSyncInfo] = useState({ status:'Not connected', lastSync:null });
+    const [showSettings, setShowSettings] = useState(false);
+    const [configJson, setConfigJson] = useState(localStorage.getItem('fmp_firebase_config') || '');
+
+    // NEW: per-card expand/collapse state
+    const [expandedCards, setExpandedCards] = useState({}); // { [id]: true|false }
+
+    const categories = ['Italian','Asian','Mexican','American','French','Mediterranean','Indian','Chinese'];
+    const types = ['Pasta','Meat','Vegetable','Soup','Salad','Rice','Chicken','Beef','Seafood','Cake','Cookies'];
+    const purposes = ['Breakfast','Meal','Dessert','Snack','Appetizer'];
+    const units = ['g','kg','ml','l','cups','tbsp','tsp','pieces','slices'];
+
+    const lastCloudDataRef = useRef(null);
+
+    // Boot: load local, then attempt init firebase (if config present) and merge
+    useEffect(()=>{
+        const local = readLocal();
+        setRecipes(local.recipes);
+        setSyncInfo({ status: 'Loaded local', lastSync: local.lastUpdated });
+        setSyncHeader('Local','Loaded from local');
+
+        (async () => {
+            const init = await initFirebaseIfPossible();
+            if (init.ok){
+                setStorageMode('Cloud');
+                setSyncInfo(s => ({...s, status:'Connected'}));
+                // merge strategy: prefer newer
+                const cloud = await readCloudOnce();
+                const localMeta = JSON.parse(localStorage.getItem(META_KEY) || '{"lastUpdated":null}');
+                const localTime = Date.parse(localMeta.lastUpdated || 0);
+                const cloudTime = Date.parse(cloud?.lastUpdated || 0);
+                if (cloud && cloud.recipes && cloud.recipes.length){
+                    if (!localTime || cloudTime >= localTime){
+                        setRecipes(cloud.recipes);
+                        writeLocal(cloud.recipes);
+                        setSyncInfo({ status:'Synced from cloud', lastSync: cloud.lastUpdated });
+                    } else {
+                        // local newer -> push up
+                        await writeCloud(local.recipes);
+                        setSyncInfo({ status:'Pushed local to cloud', lastSync: nowIso() });
+                    }
+                } else {
+                    // No cloud doc yet => seed with local
+                    await writeCloud(local.recipes);
+                    setSyncInfo({ status:'Seeded cloud from local', lastSync: nowIso() });
+                }
+
+                // Realtime listener
+                subscribeCloud(({recipes: r, lastUpdated})=>{
+                    if (preventLoop) return;
+                    lastCloudDataRef.current = { r, lastUpdated };
+                    const localMeta2 = JSON.parse(localStorage.getItem(META_KEY) || '{"lastUpdated":null}');
+                    const localTime2 = Date.parse(localMeta2.lastUpdated || 0);
+                    const cloudTime2 = Date.parse(lastUpdated || 0);
+                    if (cloudTime2 && (!localTime2 || cloudTime2 >= localTime2)){
+                        preventLoop = true;
+                        setRecipes(r);
+                        writeLocal(r);
+                        setSyncInfo({ status:'Live update from cloud', lastSync: lastUpdated });
+                        setTimeout(()=>{ preventLoop=false; }, 200);
+                    }
+                });
+            }
         })();
-      },[]);
+    }, []);
 
-      useEffect(()=>{ if (!recipes) return; writeLocal(recipes); if (storageMode==='Cloud' && cloudEnabled && !preventLoop){ writeCloud(recipes).then(()=> setSyncInfo(s=>({...s,status:'Pushed to cloud', lastSync: nowIso()}))).catch(()=>{}); } }, [recipes]);
+    // Persist locally on changes; if Cloud mode and not from cloud, also push
+    useEffect(()=>{
+        if (!recipes) return;
+        writeLocal(recipes);
+        if (storageMode === 'Cloud' && cloudEnabled && !preventLoop){
+            writeCloud(recipes).then(()=>{
+                setSyncInfo(s=> ({...s, status: 'Pushed to cloud', lastSync: nowIso()}));
+            }).catch(e=> console.error('Cloud write failed', e));
+        }
+    }, [recipes]);
 
-      const filteredRecipes = useMemo(()=>{
+    // UI helpers
+    const filteredRecipes = useMemo(()=>{
         if (!Array.isArray(recipes)) return [];
-        return recipes.filter(r=>{
-          if (!r || typeof r!== 'object') return false;
-          const name=String(r.name||'');
-          const cat =String(r.category||'');
-          const typ =String(r.type||'');
-          const pur =String(r.purpose||'');
-          const ings=Array.isArray(r.ingredients)?r.ingredients:[];
-          const matchesSearch = name.toLowerCase().includes(searchTerm.toLowerCase()) || ings.some(ing=> (ing && typeof ing==='object' && String(ing.name||'').toLowerCase().includes(searchTerm.toLowerCase())));
-          const matchesCat = !filters.category || cat===filters.category;
-          const matchesTyp = !filters.type || typ===filters.type;
-          const matchesPur = !filters.purpose || pur===filters.purpose;
-          return matchesSearch && matchesCat && matchesTyp && matchesPur;
+        return recipes.filter(recipe => {
+            if (!recipe || typeof recipe !== 'object') return false;
+            const recipeName = String(recipe.name || '');
+            const recipeCategory = String(recipe.category || '');
+            const recipeType = String(recipe.type || '');
+            const recipePurpose = String(recipe.purpose || '');
+            const recipeIngredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+            const matchesSearch = recipeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                recipeIngredients.some(ing => (ing && typeof ing === 'object' && String(ing.name || '').toLowerCase().includes(searchTerm.toLowerCase())));
+            const matchesCategory = !filters.category || recipeCategory === filters.category;
+            const matchesType = !filters.type || recipeType === filters.type;
+            const matchesPurpose = !filters.purpose || recipePurpose === filters.purpose;
+            return matchesSearch && matchesCategory && matchesType && matchesPurpose;
         });
-      }, [recipes, searchTerm, filters]);
+    }, [recipes, searchTerm, filters]);
 
-      const scaleIngredients = (ings, originalSize=4) => {
+    const resetForm = () => {
+        setCurrentRecipe({ name:'', category:'', type:'', purpose:'', videoUrl:'', ingredients:[{name:'',quantity:'',unit:''}], instructions:[''] });
+        setEditingId(null);
+    };
+
+    const handleSubmit = () => {
+        try {
+            if (!currentRecipe || !currentRecipe.name || !currentRecipe.name.trim()) { alert('Please enter a recipe name.'); return; }
+            const cleanRecipe = {
+                name: String(currentRecipe.name || '').trim(),
+                category: String(currentRecipe.category || ''),
+                type: String(currentRecipe.type || ''),
+                purpose: String(currentRecipe.purpose || ''),
+                videoUrl: String(currentRecipe.videoUrl || ''),
+                ingredients: Array.isArray(currentRecipe.ingredients) ?
+                   currentRecipe.ingredients.filter(ing => ing && ing.name && ing.name.trim()).map(ing => ({ name:String(ing.name||'').trim(), quantity:String(ing.quantity||''), unit:String(ing.unit||'') })) : [],
+                instructions: Array.isArray(currentRecipe.instructions) ? currentRecipe.instructions.filter(x => x && typeof x==='string' && x.trim()).map(x=>String(x).trim()) : []
+            };
+            if (editingId){
+                setRecipes(prev => prev.map(r => r && r.id === editingId ? { ...cleanRecipe, id: editingId } : r));
+            } else {
+                const newRecipe = { ...cleanRecipe, id: Date.now() + Math.random() };
+                setRecipes(prev => [...(prev||[]), newRecipe]);
+            }
+            setShowForm(false); resetForm();
+        } catch(e){ console.error('Save error:', e); alert('Error saving recipe.'); }
+    };
+
+    const editRecipe = (recipe) => {
+        if (!recipe) return;
+        const safe = {
+            name: String(recipe.name||''),
+            category: String(recipe.category||''),
+            type: String(recipe.type||''),
+            purpose: String(recipe.purpose||''),
+            videoUrl: String(recipe.videoUrl||''),
+            ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({ name:String(ing?.name||''), quantity:String(ing?.quantity||''), unit:String(ing?.unit||'') })) : [{name:'',quantity:'',unit:''}],
+            instructions: Array.isArray(recipe.instructions) ? recipe.instructions.filter(s=>s && typeof s==='string').map(s=>String(s)) : ['']
+        };
+        setCurrentRecipe(safe);
+        setEditingId(recipe.id || null);
+        setShowForm(true);
+    };
+
+    const deleteRecipe = (id) => {
+        if (!id) return;
+        if (window.confirm('Delete this recipe?')) {
+            setRecipes(prev => (prev||[]).filter(r => r?.id !== id));
+        }
+    };
+
+    const exportRecipes = () => {
+        if (!recipes || recipes.length===0){ alert('No recipes to export.'); return; }
+        const dataStr = JSON.stringify(recipes, null, 2);
+        const url = URL.createObjectURL(new Blob([dataStr], {type:'application/json'}));
+        const a = document.createElement('a');
+        a.href = url; a.download = `family-recipes-${new Date().toISOString().split('T')[0]}.json`;
+        document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    };
+
+    const importRecipes = (e) => {
+        const file = e?.target?.files?.[0]; if (!file) return;
+        const isJson = file.type === 'application/json' || file.name.toLowerCase().endsWith('.json');
+        if (!isJson){ alert('Please choose a JSON file.'); e.target.value=''; return; }
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+            try {
+                const imported = JSON.parse(ev.target.result);
+                if (!Array.isArray(imported) || imported.length===0){ alert('No valid recipes in file.'); return; }
+                if (window.confirm(`Import ${imported.length} recipe(s) and replace current list?`)){
+                    const withIds = imported.map((r,i)=>({ id: Date.now()+i, name:r.name||'Untitled', category:r.category||'', type:r.type||'', purpose:r.purpose||'', videoUrl:r.videoUrl||'', ingredients:Array.isArray(r.ingredients)?r.ingredients:[], instructions:Array.isArray(r.instructions)?r.instructions:[] }));
+                    setRecipes(withIds);
+                }
+            } catch(err){ alert('Invalid JSON file.'); }
+        };
+        reader.readAsText(file);
+        e.target.value='';
+    };
+
+    const scaleIngredients = (ings, originalSize=4) => {
         if (!Array.isArray(ings)) return [];
         const scale = familySize / originalSize;
-        return ings.map(i=> ({ ...i, quantity: i?.quantity ? (parseFloat(i.quantity)*scale).toFixed(1) : '0' }));
-      };
+        return ings.map(ing => ({ ...ing, quantity: ing?.quantity ? (parseFloat(ing.quantity)*scale).toFixed(1) : '0' }));
+    };
 
-      const extractVideoId = (url)=>{ const m=(url||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/); return m?m[1]:null; };
+    const extractVideoId = (url) => { const m = (url||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\\n?#]+)/); return m?m[1]:null; };
 
-      const resetForm = ()=>{ setCurrentRecipe({ name:'', category:'', type:'', purpose:'', videoUrl:'', ingredients:[{name:'',quantity:'',unit:''}], instructions:[''] }); setEditingId(null); };
+    // Header sync indicator
+    useEffect(()=>{
+        setSyncHeader(storageMode, syncInfo.status || '');
+    }, [storageMode, syncInfo]);
 
-      const handleSubmit = ()=>{
-        try{
-          if (!currentRecipe || !currentRecipe.name || !currentRecipe.name.trim()) { alert('Please enter a recipe name.'); return; }
-          const clean = {
-            name: String(currentRecipe.name||'').trim(),
-            category: String(currentRecipe.category||''),
-            type: String(currentRecipe.type||''),
-            purpose: String(currentRecipe.purpose||''),
-            videoUrl: String(currentRecipe.videoUrl||''),
-            ingredients: Array.isArray(currentRecipe.ingredients) ? currentRecipe.ingredients.filter(i=>i&&i.name&&i.name.trim()).map(i=>({ name:String(i.name||'').trim(), quantity:String(i.quantity||''), unit:String(i.unit||'') })) : [],
-            instructions: Array.isArray(currentRecipe.instructions) ? currentRecipe.instructions.filter(x=>x&&typeof x==='string'&&x.trim()).map(x=>String(x).trim()) : []
-          };
-          if (editingId){ setRecipes(prev=> prev.map(r=> r && r.id===editingId ? {...clean, id: editingId} : r)); }
-          else { setRecipes(prev=> [...(prev||[]), {...clean, id: Date.now()+Math.random()}]); }
-          setShowForm(false); resetForm();
-        }catch(e){ alert('Error saving recipe.'); }
-      };
+    const tryEnableCloud = async () => {
+        const init = await initFirebaseIfPossible(configJson ? JSON.parse(configJson) : null);
+        if (init.ok){
+            setStorageMode('Cloud');
+            setSyncInfo({ status:'Connected', lastSync: nowIso() });
+        } else {
+            alert('Cloud not available. Please open Settings and paste a valid Firebase config.');
+            setStorageMode('Local');
+        }
+    };
 
-      const editRecipe = (r)=>{ if(!r) return; setCurrentRecipe({ name:String(r.name||''), category:String(r.category||''), type:String(r.type||''), purpose:String(r.purpose||''), videoUrl:String(r.videoUrl||''), ingredients: Array.isArray(r.ingredients)? r.ingredients.map(i=>({ name:String(i?.name||''), quantity:String(i?.quantity||''), unit:String(i?.unit||'' ) })) : [{name:'',quantity:'',unit:''}], instructions: Array.isArray(r.instructions)? r.instructions.filter(s=>s && typeof s==='string').map(String) : [''] }); setEditingId(r.id||null); setShowForm(true); };
-      const deleteRecipe = (id)=>{ if(!id) return; if (confirm('Delete this recipe?')) setRecipes(prev=> (prev||[]).filter(r=> r?.id!==id)); };
+    const onClickSyncNow = async () => {
+        if (storageMode!=='Cloud' || !cloudEnabled){ alert('Cloud not connected.'); return; }
+        const cloud = await readCloudOnce();
+        const localMeta = JSON.parse(localStorage.getItem(META_KEY) || '{"lastUpdated":null}');
+        const localTime = Date.parse(localMeta.lastUpdated || 0);
+        const cloudTime = Date.parse(cloud?.lastUpdated || 0);
+        if (cloud && cloud.recipes && cloud.recipes.length){
+            if (!localTime || cloudTime >= localTime){
+                setRecipes(cloud.recipes);
+                writeLocal(cloud.recipes);
+                setSyncInfo({ status:'Manual sync from cloud', lastSync: cloud.lastUpdated });
+            } else {
+                await writeCloud(recipes);
+                setSyncInfo({ status:'Manual push to cloud', lastSync: nowIso() });
+            }
+        } else {
+            await writeCloud(recipes);
+            setSyncInfo({ status:'Seeded cloud', lastSync: nowIso() });
+        }
+    };
 
-      const exportRecipes = ()=>{ if(!recipes||recipes.length===0){ alert('No recipes to export.'); return; } const dataStr = JSON.stringify(recipes,null,2); const url=URL.createObjectURL(new Blob([dataStr],{type:'application/json'})); const a=document.createElement('a'); a.href=url; a.download=`family-recipes-${new Date().toISOString().split('T')[0]}.json`; document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url); };
-      const importRecipes = (e)=>{ const f=e?.target?.files?.[0]; if(!f) return; const isJson=f.type==='application/json'||f.name.toLowerCase().endsWith('.json'); if(!isJson){ alert('Please choose a JSON file.'); e.target.value=''; return; } const reader=new FileReader(); reader.onload=(ev)=>{ try{ const imported=JSON.parse(ev.target.result); if(!Array.isArray(imported)||imported.length===0){ alert('No valid recipes in file.'); return; } if (confirm(`Import ${imported.length} recipe(s) and replace current list?`)){ const withIds = imported.map((r,i)=>({ id: Date.now()+i, name:r.name||'Untitled', category:r.category||'', type:r.type||'', purpose:r.purpose||'', videoUrl:r.videoUrl||'', ingredients:Array.isArray(r.ingredients)?r.ingredients:[], instructions:Array.isArray(r.instructions)?r.instructions:[] })); setRecipes(withIds); } }catch(err){ alert('Invalid JSON file.'); } }; reader.readAsText(f); e.target.value=''; };
+    const StorageBadge = () => React.createElement('span', { className: 'badge ' + (storageMode==='Cloud' ? 'badge-success' : 'badge-warn') }, storageMode);
 
-      useEffect(()=>{ setSyncHeader(storageMode, syncInfo.status||''); }, [storageMode, syncInfo]);
+    const toggleExpand = (id) => {
+        setExpandedCards(prev => ({ ...prev, [id]: !prev[id] }));
+    };
 
-      const tryEnableCloud = async ()=>{ const res = await initFirebaseIfPossible(configJson ? JSON.parse(configJson):null); if (res.ok){ setStorageMode('Cloud'); setSyncInfo({ status:'Connected', lastSync: nowIso() }); } else { alert('Cloud not available. Paste a valid Firebase config in Settings.'); setStorageMode('Local'); } };
-      const onClickSyncNow = async ()=>{ if (storageMode!=='Cloud' || !cloudEnabled){ alert('Cloud not connected.'); return; } const cloud=await readCloudOnce(); const localMeta=JSON.parse(localStorage.getItem(META_KEY)||'{"lastUpdated":null}'); const localTime=Date.parse(localMeta.lastUpdated||0); const cloudTime=Date.parse(cloud?.lastUpdated||0); if (cloud && cloud.recipes && cloud.recipes.length){ if (!localTime || cloudTime>=localTime){ setRecipes(cloud.recipes); writeLocal(cloud.recipes); setSyncInfo({status:'Manual sync from cloud', lastSync: cloud.lastUpdated}); } else { await writeCloud(recipes); setSyncInfo({status:'Manual push to cloud', lastSync: nowIso()}); } } else { await writeCloud(recipes); setSyncInfo({status:'Seeded cloud', lastSync: nowIso()}); } };
+    return React.createElement('div', { className:'main-container' },
+        React.createElement('div', { className:'content-wrapper' },
+            React.createElement('div', { className:'card-container' },
 
-      const toggleExpand = (id)=>{ setExpandedIds(prev=>{ const next = new Set(prev); next.has(id) ? next.delete(id) : next.add(id); return next; }); };
-
-      const StorageBadge = ()=> React.createElement('span', { className: 'badge ' + (storageMode==='Cloud' ? 'badge-success':'badge-warn') }, storageMode);
-
-      return React.createElement('div', { className:'content-wrapper' },
-        React.createElement('div', { className:'card-container' },
-          React.createElement('div', { className:'header-gradient' },
-            React.createElement('div', { className:'header-container' },
-              React.createElement('div', null,
-                React.createElement('h1', { className:'header-title' }, React.createElement(ChefHat,{style:{width:'2rem',height:'2rem'}}), 'Family Meal Planner ', React.createElement(StorageBadge)),
-                React.createElement('p', { className:'header-subtitle' }, 'Organize your recipes • Local-first • Optional cloud sync')
-              ),
-              React.createElement('div', { id:'syncSummary', className:'badge', style:{ background:'rgba(255,255,255,.2)', color:'#fff' } }, syncInfo?.status||'Not connected')
-            )
-          ),
-
-          React.createElement('div', { className:'control-bar' },
-            React.createElement('div', { className:'control-row' },
-              React.createElement('div', { className:'control-group' },
-                React.createElement('button', { onClick:()=>setShowForm(true), className:'btn btn-primary' }, React.createElement(Plus), 'Add Recipe'),
-                React.createElement('button', { onClick: exportRecipes, className:'btn btn-secondary' }, 'Export'),
-                React.createElement('label', { className:'btn btn-accent' }, 'Import', React.createElement('input', { type:'file', accept:'.json', onChange: importRecipes, className:'hidden' }))
-              ),
-              React.createElement('div', { className:'control-group' },
-                React.createElement('span', { style:{ color:'#6b7280', fontWeight:600 } }, 'Family Size:'),
-                React.createElement('input', { type:'number', min:'1', max:'20', value:familySize, onChange:(e)=> setFamilySize(Number(e.target.value)), className:'form-input', style:{ width:'5rem' } })
-              )
-            ),
-            React.createElement('div', { className:'control-row', style:{ marginTop:'1rem' } },
-              React.createElement('div', { className:'control-group' },
-                React.createElement('span', { className:'small' }, 'Storage:'),
-                React.createElement('select', { className:'form-input', style:{ width:'11rem' }, value:storageMode, onChange: async (e)=>{ const v=e.target.value; if (v==='Cloud') await tryEnableCloud(); else { setStorageMode('Local'); setSyncInfo(s=>({...s,status:'Local only'})); } } },
-                  React.createElement('option', { value:'Local' }, 'Local'),
-                  React.createElement('option', { value:'Cloud' }, 'Cloud (Firebase)')
-                ),
-                React.createElement('button', { className:'btn btn-neutral', onClick: ()=> alert('Open Settings modal in your original build to paste Firebase config.') }, React.createElement(Gear), 'Settings'),
-                React.createElement('button', { className:'btn btn-neutral', onClick: onClickSyncNow }, React.createElement(RefreshCw), 'Sync now')
-              ),
-              React.createElement('div', { className:'control-group', style:{ justifyContent:'flex-end', flex:1 } },
-                React.createElement('div', { className:'search-container' },
-                  React.createElement('span', { className:'search-icon' }, '🔍'),
-                  React.createElement('input', { type:'text', placeholder:'Search recipes or ingredients...', value:searchTerm, onChange:(e)=> setSearchTerm(e.target.value), className:'search-input' })
-                ),
-                React.createElement('button', { onClick:()=> setShowFilters(!showFilters), className:`btn btn-filter ${showFilters?'active':''}` }, React.createElement(Filter), React.createElement('span', null, 'Filters'))
-              )
-            )
-          ),
-
-          showFilters && React.createElement('div', { style:{ padding:'0 1.5rem' } },
-            React.createElement('div', { className:'filter-panel' },
-              React.createElement('div', { className:'filter-grid' },
-                React.createElement('select', { className:'form-input', value:filters.category, onChange:(e)=> setFilters({...filters, category:e.target.value}) },
-                  React.createElement('option', { value:'' }, 'All Categories'), categories.map(c=> React.createElement('option', { key:c, value:c }, c))
-                ),
-                React.createElement('select', { className:'form-input', value:filters.type, onChange:(e)=> setFilters({...filters, type:e.target.value}) },
-                  React.createElement('option', { value:'' }, 'All Types'), types.map(t=> React.createElement('option', { key:t, value:t }, t))
-                ),
-                React.createElement('select', { className:'form-input', value:filters.purpose, onChange:(e)=> setFilters({...filters, purpose:e.target.value}) },
-                  React.createElement('option', { value:'' }, 'All Purposes'), purposes.map(p=> React.createElement('option', { key:p, value:p }, p))
-                )
-              )
-            )
-          ),
-
-          React.createElement('div', { className:'recipes-container' },
-            filteredRecipes.length===0 ? (
-              React.createElement('div', { style:{ textAlign:'center', padding:'3rem 1rem', color:'#6b7280' } }, 'No recipes found')
-            ) : (
-              React.createElement('div', { className:'recipes-grid' },
-                filteredRecipes.map((r, index)=>{
-                  const id = r.id || `recipe-${index}`;
-                  const name = String(r.name||'Untitled');
-                  const cat = String(r.category||'');
-                  const typ = String(r.type||'');
-                  const pur = String(r.purpose||'');
-                  const vurl= String(r.videoUrl||'');
-                  const ings = Array.isArray(r.ingredients)? r.ingredients:[];
-                  const steps= Array.isArray(r.instructions)? r.instructions:[];
-                  const isOpen = expandedIds.has(id);
-
-                  return React.createElement('div', { key:id, className:'recipe-card' },
-                    vurl && extractVideoId(vurl) && React.createElement('div', { className:'recipe-video' },
-                      React.createElement('iframe', { src:`https://www.youtube.com/embed/${extractVideoId(vurl)}`, style:{width:'100%',height:'100%',border:'none'}, allowFullScreen:true, title:name })
-                    ),
-                    React.createElement('div', { className:'recipe-content' },
-                      React.createElement('div', { className:'recipe-header' },
-                        React.createElement('h3', { className:'recipe-title line-clamp-2' }, name),
-                        React.createElement('div', { className:'recipe-actions' },
-                          React.createElement('button', { onClick:()=>alert('Open your edit modal in your original build.'), className:'action-btn edit-btn', title:'Edit' }, React.createElement(Edit2)),
-                          React.createElement('button', { onClick:()=>deleteRecipe(id), className:'action-btn trash-btn', title:'Delete' }, React.createElement(Trash2)),
-                          React.createElement('button', { onClick:()=> toggleExpand(id), className:'expand-toggle', title:'Expand/Collapse' }, isOpen?'Collapse':'Expand')
+                // Header
+                React.createElement('div', { className:'header-gradient' },
+                    React.createElement('div', { className:'header-container' },
+                        React.createElement('div', null,
+                            React.createElement('h1', { className:'header-title' }, React.createElement(ChefHat,{style:{width:'2.2rem',height:'2.2rem'}}), 'Family Meal Planner', React.createElement(StorageBadge)),
+                            React.createElement('p', { className:'header-subtitle' }, 'Recipe organizer • Local-first • Optional cloud sync')
+                        ),
+                        (recipes && recipes.length>0) && React.createElement('div', { className:'recipe-counter' },
+                            React.createElement('div', { className:'recipe-count' }, recipes.length),
+                            React.createElement('div', { className:'recipe-label' }, `Recipe${recipes.length!==1 ? 's':''}`),
+                            React.createElement('div', { className:'recipe-status' }, syncInfo?.status || '')
                         )
-                      ),
-                      React.createElement('div', { className:'recipe-tags' },
-                        cat && React.createElement('span', { className:'tag tag-category' }, cat),
-                        typ && React.createElement('span', { className:'tag tag-type' }, typ),
-                        pur && React.createElement('span', { className:'tag tag-purpose' }, pur)
-                      ),
-
-                      // Ingredients
-                      React.createElement('div', { className:'recipe-section' },
-                        React.createElement('h4', { className:'section-title-small' }, `Ingredients (for ${familySize} people)`),
-                        React.createElement('div', { className:'ingredient-list' },
-                          (isOpen ? scaleIngredients(ings) : scaleIngredients(ings).slice(0,4)).map((ing, i)=>
-                            React.createElement('div', { key:i, className:'ingredient-item' },
-                              React.createElement('span', null, String(ing?.name||'')),
-                              React.createElement('span', { className:'ingredient-amount' }, `${String(ing?.quantity||'0')} ${String(ing?.unit||'')}`)
-                            )
-                          ),
-                          (!isOpen && ings.length>4) && React.createElement('div', { className:'more-items' }, `+${ings.length-4} more ingredients...`)
-                        )
-                      ),
-
-                      // Instructions
-                      React.createElement('div', { className:'recipe-section' },
-                        React.createElement('h4', { className:'section-title-small' }, `Instructions (${steps.length} steps)`),
-                        isOpen ? (
-                          React.createElement('ol', { style:{ paddingLeft:'1.25rem', margin:0 } },
-                            steps.map((s,i)=> React.createElement('li', { key:i, style:{ marginBottom:'.5rem', color:'#4b5563' } }, String(s)))
-                          )
-                        ) : (
-                          React.createElement('div', { className:'recipe-details collapsed' },
-                            React.createElement('p', { className:'line', style:{ color:'#4b5563', margin:0 } }, String(steps[0]||'No instructions provided'), steps.length>1 && '...')
-                          )
-                        )
-                      )
                     )
-                  );
-                })
-              )
-            )
-          )
-        )
-      );
-    }
+                ),
 
-    const root = createRoot(document.getElementById('root'));
-    root.render(React.createElement(App));
-  </script>
+                // Controls
+                React.createElement('div', { className:'control-bar' },
+                    // Top section: Main recipe management controls
+                    React.createElement('div', { className:'control-row' },
+                        React.createElement('div', { className:'control-group' },
+                            React.createElement('button', { onClick:()=>setShowForm(true), className:'btn btn-primary' }, React.createElement(Plus), 'Add Recipe'),
+                            React.createElement('button', { onClick: exportRecipes, className:'btn btn-secondary', title:'Export all recipes as JSON' }, React.createElement(Download), 'Export'),
+                            React.createElement('label', { className:'btn btn-accent' }, React.createElement(Upload), 'Import',
+                                React.createElement('input', { type:'file', accept:'.json', onChange: importRecipes, className:'hidden' }))
+                        ),
+                        React.createElement('div', { className:'form-group' },
+                            React.createElement(Users, null),
+                            React.createElement('span', { style:{ color:'#6b7280', fontWeight:500 } }, 'Family Size:'),
+                            React.createElement('input', { type:'number', min:'1', max:'20', value: familySize, onChange:(e)=> setFamilySize(Number(e.target.value)), style:{ width:'4rem', textAlign:'center', border:'1px solid #d1d5db', borderRadius:'0.5rem', padding:'0.25rem 0.5rem' } })
+                        )
+                    ),
+
+                    // Middle section: App-level storage controls
+                    React.createElement('div', { style:{ marginTop:'1rem', display:'flex', gap:'0.75rem', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between' } },
+                        React.createElement('div', { style:{ display:'flex', gap:'0.5rem', alignItems:'center' } },
+                            React.createElement('span', { className:'small' }, 'Storage:'),
+                            React.createElement('select', { className:'form-input', style:{ width:'10rem' }, value: storageMode, onChange: async (e)=>{
+                                const val = e.target.value;
+                                if (val === 'Cloud'){ await tryEnableCloud(); }
+                                else { setStorageMode('Local'); setSyncInfo(s=> ({...s, status:'Local only'})); }
+                            }},
+                                React.createElement('option', { value:'Local' }, 'Local'),
+                                React.createElement('option', { value:'Cloud' }, 'Cloud (Firebase)')
+                            ),
+                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=> setShowSettings(true) }, React.createElement(Gear), React.createElement('span', null, 'Settings')),
+                            React.createElement('button', { className:'btn btn-neutral', onClick: onClickSyncNow }, React.createElement(RefreshCw), React.createElement('span', null, 'Sync now'))
+                        ),
+                        React.createElement('div', { className:'small' }, syncInfo?.lastSync ? ('Last sync: ' + new Date(syncInfo.lastSync).toLocaleString()) : '')
+                    ),
+
+                    // Search and Filter controls
+                    React.createElement('div', { style:{ marginTop:'1rem', display:'flex', gap:'1rem', alignItems:'center', justifyContent:'space-between' } },
+                        React.createElement('div', { className:'search-container' },
+                            React.createElement('input', { type:'text', placeholder:'Search recipes or ingredients...', value:searchTerm, onChange:(e)=> setSearchTerm(e.target.value), className:'search-input' })
+                        ),
+                        React.createElement('button', { onClick:()=> setShowFilters(!showFilters), className:`btn btn-filter ${showFilters ? 'active' : ''}`, title:'Show/hide filters' }, React.createElement(Filter), React.createElement('span', null, 'Filters'))
+                    )
+                ),
+
+                // Filter Panel
+                showFilters && React.createElement('div', { style:{ padding:'0 1.5rem' } },
+                    React.createElement('div', { className:'filter-panel' },
+                        React.createElement('div', { className:'filter-grid' },
+                            React.createElement('select', { value:filters.category, onChange:(e)=> setFilters({...filters, category:e.target.value}), className:'form-input' },
+                                React.createElement('option', { value:'' }, 'All Categories'),
+                                ['Italian','Asian','Mexican','American','French','Mediterranean','Indian','Chinese'].map(cat => React.createElement('option', { key:cat, value:cat }, cat))
+                            ),
+                            React.createElement('select', { value:filters.type, onChange:(e)=> setFilters({...filters, type:e.target.value}), className:'form-input' },
+                                React.createElement('option', { value:'' }, 'All Types'),
+                                ['Pasta','Meat','Vegetable','Soup','Salad','Rice','Chicken','Beef','Seafood','Cake','Cookies'].map(t => React.createElement('option', { key:t, value:t }, t))
+                            ),
+                            React.createElement('select', { value:filters.purpose, onChange:(e)=> setFilters({...filters, purpose:e.target.value}), className:'form-input' },
+                                React.createElement('option', { value:'' }, 'All Purposes'),
+                                ['Breakfast','Meal','Dessert','Snack','Appetizer'].map(p => React.createElement('option', { key:p, value:p }, p))
+                            )
+                        )
+                    )
+                ),
+
+                // Add/Edit Modal
+                showForm && React.createElement('div', { className:'modal-overlay' },
+                    React.createElement('div', { className:'modal-container' },
+                        React.createElement('div', { className:'modal-header' }, React.createElement('h2', { className:'modal-title' }, editingId ? 'Edit Recipe' : 'Add New Recipe') ),
+                        React.createElement('div', { className:'modal-body' },
+                            React.createElement('div', { className:'form-grid', style:{ display:'grid', gap:'1rem', gridTemplateColumns:'repeat(auto-fit, minmax(250px, 1fr))' } },
+                                React.createElement('div', null,
+                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Recipe Name'),
+                                    React.createElement('input', { type:'text', required:true, value: currentRecipe.name, onChange:(e)=> setCurrentRecipe({...currentRecipe, name:e.target.value}), className:'form-input', placeholder:'Enter recipe name' })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'YouTube Video URL'),
+                                    React.createElement('input', { type:'url', value: currentRecipe.videoUrl, onChange:(e)=> setCurrentRecipe({...currentRecipe, videoUrl:e.target.value}), className:'form-input', placeholder:'https://www.youtube.com/watch?v=...' })
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Category'),
+                                    React.createElement('select', { value: currentRecipe.category, onChange:(e)=> setCurrentRecipe({...currentRecipe, category:e.target.value}), className:'form-input' },
+                                        React.createElement('option', { value:'' }, 'Select Category'),
+                                        ['Italian','Asian','Mexican','American','French','Mediterranean','Indian','Chinese'].map(cat => React.createElement('option', { key:cat, value:cat }, cat))
+                                    )
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Type/Style'),
+                                    React.createElement('select', { value: currentRecipe.type, onChange:(e)=> setCurrentRecipe({...currentRecipe, type:e.target.value}), className:'form-input' },
+                                        React.createElement('option', { value:'' }, 'Select Type'),
+                                        ['Pasta','Meat','Vegetable','Soup','Salad','Rice','Chicken','Beef','Seafood','Cake','Cookies'].map(t => React.createElement('option', { key:t, value:t }, t))
+                                    )
+                                ),
+                                React.createElement('div', null,
+                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Purpose'),
+                                    React.createElement('select', { value: currentRecipe.purpose, onChange:(e)=> setCurrentRecipe({...currentRecipe, purpose:e.target.value}), className:'form-input' },
+                                        React.createElement('option', { value:'' }, 'Select Purpose'),
+                                        ['Breakfast','Meal','Dessert','Snack','Appetizer'].map(p => React.createElement('option', { key:p, value:p }, p))
+                                    )
+                                )
+                            ),
+                            // Ingredients
+                            React.createElement('div', { style:{ marginTop:'1rem' } },
+                                React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' } },
+                                    React.createElement('h3', { className:'section-title-small' }, 'Ingredients'),
+                                    React.createElement('button', { onClick: ()=> setCurrentRecipe({...currentRecipe, ingredients:[...currentRecipe.ingredients, {name:'',quantity:'',unit:''}] }), className:'btn btn-primary btn-sm' }, React.createElement(Plus), 'Add Ingredient')
+                                ),
+                                currentRecipe.ingredients.map((ing, idx)=> React.createElement('div', { key:idx, style:{ display:'flex', gap:'0.5rem', marginBottom:'0.5rem', background:'#f9fafb', padding:'0.75rem', borderRadius:'0.75rem', flexWrap:'wrap' } },
+                                    React.createElement('input', { type:'text', placeholder:'Ingredient name', value: ing.name, onChange:(e)=>{
+                                        const arr = currentRecipe.ingredients.slice(); arr[idx] = {...ing, name:e.target.value}; setCurrentRecipe({...currentRecipe, ingredients:arr});
+                                    }, className:'form-input', style:{ flex:'1 1 200px' } }),
+                                    React.createElement('input', { type:'number', step:'0.1', placeholder:'Quantity', value: ing.quantity, onChange:(e)=>{
+                                        const arr = currentRecipe.ingredients.slice(); arr[idx] = {...ing, quantity:e.target.value}; setCurrentRecipe({...currentRecipe, ingredients:arr});
+                                    }, className:'form-input', style:{ flex:'1 1 120px' } }),
+                                    React.createElement('select', { value: ing.unit, onChange:(e)=>{
+                                        const arr = currentRecipe.ingredients.slice(); arr[idx] = {...ing, unit:e.target.value}; setCurrentRecipe({...currentRecipe, ingredients:arr});
+                                    }, className:'form-input', style:{ flex:'1 1 120px' } },
+                                        React.createElement('option', { value:'' }, 'Unit'),
+                                        units.map(u => React.createElement('option', { key:u, value:u }, u))
+                                    ),
+                                    React.createElement('button', { onClick: ()=>{
+                                        const arr = currentRecipe.ingredients.slice(); arr.splice(idx,1); setCurrentRecipe({...currentRecipe, ingredients:arr});
+                                    }, className:'btn btn-neutral btn-sm' }, React.createElement(Trash2), 'Remove')
+                                ))
+                            ),
+                            // Instructions
+                            React.createElement('div', { style:{ marginTop:'1rem' } },
+                                React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' } },
+                                    React.createElement('h3', { className:'section-title-small' }, 'Instructions'),
+                                    React.createElement('button', { onClick: ()=> setCurrentRecipe({...currentRecipe, instructions:[...currentRecipe.instructions, ''] }), className:'btn btn-secondary btn-sm' }, React.createElement(Plus), 'Add Step')
+                                ),
+                                currentRecipe.instructions.map((step, idx)=> React.createElement('div', { key:idx, style:{ display:'flex', gap:'0.5rem', marginBottom:'0.5rem', background:'#f9fafb', padding:'0.75rem', borderRadius:'0.75rem', alignItems:'flex-start', flexWrap:'wrap' } },
+                                    React.createElement('span', { className:'badge badge-warn' }, idx+1),
+                                    React.createElement('textarea', { rows:2, placeholder:'Describe this step...', value: step, onChange:(e)=>{
+                                        const arr = currentRecipe.instructions.slice(); arr[idx] = e.target.value; setCurrentRecipe({...currentRecipe, instructions:arr});
+                                    }, className:'form-input', style:{ flex:'1 1 300px', minHeight:'60px', resize:'vertical' } }),
+                                    React.createElement('button', { onClick: ()=>{
+                                        const arr = currentRecipe.instructions.slice(); arr.splice(idx,1); setCurrentRecipe({...currentRecipe, instructions:arr});
+                                    }, className:'btn btn-neutral btn-sm' }, React.createElement(Trash2), 'Remove')
+                                ))
+                            )
+                        ),
+                        React.createElement('div', { className:'modal-actions' },
+                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=>{ setShowForm(false); resetForm(); } }, 'Cancel'),
+                            React.createElement('button', { className:'btn btn-save', onClick: handleSubmit }, editingId ? 'Update Recipe' : 'Save Recipe')
+                        )
+                    )
+                ),
+
+                // Settings Modal
+                showSettings && React.createElement('div', { className:'modal-overlay' },
+                    React.createElement('div', { className:'modal-container' },
+                        React.createElement('div', { className:'modal-header' }, React.createElement('h2', { className:'modal-title' }, 'Cloud Sync Settings (Firebase)') ),
+                        React.createElement('div', { className:'modal-body' },
+                            React.createElement('p', { className:'small' }, 'Paste your Firebase web config JSON here (Project settings → General → Your apps → SDK setup & configuration → Config).'),
+                            React.createElement('textarea', { className:'form-input', rows:8, placeholder:'{\\n  \"apiKey\": \"...\",\\n  \"authDomain\":\"...\",\\n  \"projectId\":\"...\",\\n  \"appId\":\"...\"\\n}', value: configJson, onChange:(e)=> setConfigJson(e.target.value) }),
+                            React.createElement('p', { className:'small' }, 'Tip: Leave blank to keep using the last saved config. We use Anonymous Auth and store your recipes in Firestore under collection \"familyMealPlanner\" with your anonymous UID.')
+                        ),
+                        React.createElement('div', { className:'modal-actions' },
+                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=> setShowSettings(false) }, 'Close'),
+                            React.createElement('button', { className:'btn btn-save', onClick: async ()=>{
+                                try{
+                                    if (configJson && configJson.trim()){
+                                        JSON.parse(configJson); // validate
+                                        localStorage.setItem('fmp_firebase_config', configJson.trim());
+                                    }
+                                    const res = await initFirebaseIfPossible(configJson ? JSON.parse(configJson) : null);
+                                    if (res.ok){ setStorageMode('Cloud'); setSyncInfo({ status:'Connected', lastSync: nowIso() }); alert('Connected!'); }
+                                    else { alert('Could not connect. Please verify the config.'); }
+                                } catch(e){ alert('Invalid JSON.'); }
+                            } }, 'Save & Connect')
+                        )
+                    )
+                ),
+
+                // Content grid
+                React.createElement('div', { className:'recipes-container' },
+                    filteredRecipes.length === 0 ?
+                        React.createElement('div', { className:'empty-state' },
+                            React.createElement('div', { className:'empty-icon' }, '🍳'),
+                            React.createElement('h3', { className:'empty-title' }, 'No recipes found'),
+                            React.createElement('p', { className:'empty-description' }, (!recipes || recipes.length===0) ? 'Add your first recipe to get started!' : 'Try adjusting your search or filters'),
+                            (!recipes || recipes.length===0) && React.createElement('div', { className:'info-box' },
+                                React.createElement('div', { className:'info-header' }, 'Data Storage & Backup'),
+                                React.createElement('p', { className:'info-text' }, 'Your recipes are saved locally. Switch to Cloud to sync across devices. Use Export/Import to back up or migrate.')
+                            )
+                        )
+                    :
+                        React.createElement('div', { className:'recipes-grid' },
+                            filteredRecipes.map((recipe, index)=>{
+                                if (!recipe || typeof recipe !== 'object') return null;
+                                const recipeId = recipe.id || `recipe-${index}`;
+                                const recipeName = String(recipe.name || 'Untitled Recipe');
+                                const recipeCategory = String(recipe.category || '');
+                                const recipeType = String(recipe.type || '');
+                                const recipePurpose = String(recipe.purpose || '');
+                                const recipeVideoUrl = String(recipe.videoUrl || '');
+                                const recipeIngredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+                                const recipeInstructions = Array.isArray(recipe.instructions) ? recipe.instructions : [];
+
+                                const isExpanded = !!expandedCards[recipeId];
+                                const shownIngredients = (isExpanded ? scaleIngredients(recipeIngredients) : scaleIngredients(recipeIngredients).slice(0,4));
+
+                                return React.createElement('div', { key: recipeId, className:'recipe-card' },
+                                    recipeVideoUrl && extractVideoId(recipeVideoUrl) && React.createElement('div', { className:'recipe-video' },
+                                        React.createElement('iframe', { src:`https://www.youtube.com/embed/${extractVideoId(recipeVideoUrl)}`, style:{ width:'100%', height:'100%', border:'none' }, frameBorder:'0', allowFullScreen:true, title: recipeName })
+                                    ),
+                                    React.createElement('div', { className:'recipe-content' },
+                                        React.createElement('div', { className:'recipe-header' },
+                                            React.createElement('h3', { className: 'recipe-title' + (isExpanded ? '' : ' line-clamp-2') }, recipeName),
+                                            React.createElement('div', { className:'recipe-actions' },
+                                                React.createElement('button', { onClick: ()=> editRecipe(recipe), className:'action-btn edit-btn', title:'Edit recipe' }, React.createElement(Edit2)),
+                                                React.createElement('button', { onClick: ()=> deleteRecipe(recipeId), className:'action-btn trash-btn', title:'Delete recipe' }, React.createElement(Trash2))
+                                            )
+                                        ),
+                                        React.createElement('div', { className:'recipe-tags' },
+                                            recipeCategory && React.createElement('span', { className:'tag tag-category' }, recipeCategory),
+                                            recipeType && React.createElement('span', { className:'tag tag-type' }, recipeType),
+                                            recipePurpose && React.createElement('span', { className:'tag tag-purpose' }, recipePurpose)
+                                        ),
+                                        React.createElement('div', { className:'recipe-section' },
+                                            React.createElement('div', { className:'section-header-small' },
+                                                React.createElement('h4', { className:'section-title-small' }, `Ingredients (for ${familySize} people)`)
+                                            ),
+                                            React.createElement('div', { className:'ingredient-list' },
+                                                shownIngredients.map((ing, idx)=>
+                                                    React.createElement('div', { key:idx, className:'ingredient-item' },
+                                                        React.createElement('span', { className:'ingredient-name' }, String(ing?.name || 'Unknown ingredient')),
+                                                        React.createElement('span', { className:'ingredient-amount' }, `${String(ing?.quantity || '0')} ${String(ing?.unit || '')}`)
+                                                    )
+                                                ),
+                                                (!isExpanded && recipeIngredients.length>4) && React.createElement('div', { className:'more-items' }, `+${recipeIngredients.length-4} more ingredients...`)
+                                            )
+                                        ),
+                                        React.createElement('div', { className:'recipe-section' },
+                                            React.createElement('div', { className:'section-header-small' },
+                                                React.createElement(Clock, { style:{width:'20px',height:'20px'} }),
+                                                React.createElement('h4', { className:'section-title-small' }, `Instructions (${recipeInstructions.length} step${recipeInstructions.length!==1?'s':''})`)
+                                            ),
+                                            isExpanded
+                                                ? React.createElement('ol', { className:'instruction-list', style:{ paddingLeft: '1.2rem', margin: 0, display:'flex', flexDirection:'column', gap:'0.35rem' } },
+                                                    recipeInstructions.map((step, idx) =>
+                                                        React.createElement('li', { key: idx }, String(step || ''))
+                                                    )
+                                                )
+                                                : React.createElement('p', { className:'instruction-preview line-clamp-3' },
+                                                    String(recipeInstructions[0] || 'No instructions provided'),
+                                                    recipeInstructions.length>1 && '...'
+                                                )
+                                        )
+                                    ),
+                                    React.createElement('div', { className:'expand-footer' },
+                                        React.createElement('button', {
+                                            className:'btn btn-neutral btn-sm',
+                                            onClick: ()=> toggleExpand(recipeId),
+                                            'aria-expanded': isExpanded,
+                                            title: isExpanded ? 'Collapse recipe' : 'Expand to see full content'
+                                        }, isExpanded ? 'Show less' : 'Show more')
+                                    )
+                                );
+                            })
+                        )
+                )
+            )
+        )
+    );
+}
+
+// Mount
+const root = createRoot(document.getElementById('root'));
+root.render(React.createElement(FamilyMealPlannerApp));
+</script>
 </body>
 </html>
