@@ -484,10 +484,11 @@ async function initFirebaseIfPossible(configFromUser=null) {
     }
 }
 
-// Firestore document path for this app
+// Firestore document path for this app - shared by all family members
 function getDocRef() {
-    const uid = fb?.user?.uid || 'public';
-    return fb.db.collection('familyMealPlanner').doc(uid);
+    // Use a fixed document name that all family members share
+    const FAMILY_DOC_ID = 'main-family';
+    return fb.db.collection('familyMealPlanner').doc(FAMILY_DOC_ID);
 }
 
 // Read from local storage
