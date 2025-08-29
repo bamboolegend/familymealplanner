@@ -681,7 +681,7 @@ function FamilyMealPlannerApp(){
     // Owner verification function
     const handleOwnerAccess = () => {
         const ownerCode = prompt('Enter owner code to enable recipe editing:');
-        const correctCode = 'FamilyChef2024'; // CHANGE THIS TO YOUR SECRET CODE
+        const correctCode = '7997'; // CHANGE THIS TO YOUR SECRET CODE
         
         if (ownerCode === correctCode) {
             localStorage.setItem('familyRecipeOwner', 'true');
