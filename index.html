@@ -391,7 +391,7 @@ const DEFAULT_SAMPLE = [{
     category: "Italian",
     types: ["Pasta", "Main Course"], // Updated to array
     purposes: ["Meal", "Dinner"], // Updated to array
-    videoUrl: "https://www.youtube.com/embed/3AAdKl1UYZs",
+    videoUrl: "https://www.youtube.com/watch?v=3AAdKl1UYZs",
     ingredients: [
         { name: "Spaghetti", quantity: "400", unit: "g" },
         { name: "Eggs", quantity: "4", unit: "pieces" },
@@ -542,6 +542,44 @@ function subscribeCloud(onData) {
         onData({ recipes: cloudRecipes, lastUpdated: data.lastUpdated || null });
     });
 }
+
+// IMPROVED: YouTube video ID extraction function
+const extractVideoId = (url) => {
+    if (!url) return null;
+    
+    // Clean the URL and handle various YouTube URL formats
+    const cleanUrl = url.trim();
+    
+    // Multiple regex patterns to handle different YouTube URL formats
+    const patterns = [
+        // Standard YouTube watch URLs
+        /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+        // YouTube share URLs (youtu.be)
+        /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
+        // YouTube embed URLs
+        /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+        // Mobile YouTube URLs
+        /(?:m\.youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
+        // YouTube URLs with additional parameters
+        /(?:youtube\.com\/watch\?.*v=)([a-zA-Z0-9_-]{11})/,
+        // YouTube playlist URLs (extract video ID)
+        /(?:youtube\.com\/watch\?.*v=)([a-zA-Z0-9_-]{11}).*&list=/,
+        // Any other YouTube domain variations
+        /(?:.*youtube.*[?&]v=)([a-zA-Z0-9_-]{11})/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = cleanUrl.match(pattern);
+        if (match && match[1]) {
+            // Additional validation: YouTube video IDs are always 11 characters
+            if (match[1].length === 11) {
+                return match[1];
+            }
+        }
+    }
+    
+    return null;
+};
 
 // Tag input component
 function TagInput({ label, values = [], onChange, suggestions = [], placeholder = "Add tag..." }) {
@@ -875,8 +913,6 @@ function FamilyMealPlannerApp(){
         return ings.map(ing => ({ ...ing, quantity: ing?.quantity ? (parseFloat(ing.quantity)*scale).toFixed(1) : '0' }));
     };
 
-    const extractVideoId = (url) => { const m = (url||'').match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\\n?#]+)/); return m?m[1]:null; };
-
     // Header sync indicator
     useEffect(()=>{
         setSyncHeader(storageMode, syncInfo.status || '');
@@ -1173,9 +1209,21 @@ function FamilyMealPlannerApp(){
                                 const isExpanded = !!expandedCards[recipeId];
                                 const shownIngredients = (isExpanded ? scaleIngredients(recipeIngredients) : scaleIngredients(recipeIngredients).slice(0,4));
 
+                                // Debug YouTube embedding
+                                const videoId = extractVideoId(recipeVideoUrl);
+                                // Uncomment these lines for debugging:
+                                // console.log('Recipe:', recipeName, 'Video URL:', recipeVideoUrl, 'Video ID:', videoId);
+
                                 return React.createElement('div', { key: recipeId, className:'recipe-card' },
-                                    recipeVideoUrl && extractVideoId(recipeVideoUrl) && React.createElement('div', { className:'recipe-video' },
-                                        React.createElement('iframe', { src:`https://www.youtube.com/embed/${extractVideoId(recipeVideoUrl)}`, style:{ width:'100%', height:'100%', border:'none' }, frameBorder:'0', allowFullScreen:true, title: recipeName })
+                                    recipeVideoUrl && videoId && React.createElement('div', { className:'recipe-video' },
+                                        React.createElement('iframe', { 
+                                            src:`https://www.youtube.com/embed/${videoId}`, 
+                                            style:{ width:'100%', height:'100%', border:'none' }, 
+                                            frameBorder:'0', 
+                                            allowFullScreen:true, 
+                                            title: recipeName,
+                                            loading: 'lazy' // Improve performance
+                                        })
                                     ),
                                     React.createElement('div', { className:'recipe-content' },
                                         React.createElement('div', { className:'recipe-header' },
