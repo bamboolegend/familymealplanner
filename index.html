@@ -67,6 +67,19 @@
         .badge-danger { background: #fee2e2; color: #991b1b; }
         .small { font-size: 0.85rem; color: #6b7280; }
 
+        .owner-indicator {
+            background: rgba(34, 197, 94, 0.2);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+            color: #166534;
+            padding: 0.5rem 1rem;
+            border-radius: 0.75rem;
+            font-size: 0.85rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
         .form-group { display: flex; align-items: center; gap: 0.5rem; background: white; border-radius: 1rem; padding: 0.5rem 1rem; box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
         .form-input { border: 1px solid #d1d5db; border-radius: 0.5rem; padding: 0.75rem 1rem; width: 100%; font-size: 1rem; }
         .form-input:focus { outline: none; border-color: #f97316; box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1); }
@@ -147,6 +160,73 @@
         .expand-hint {
             font-size: 0.85rem;
             color: #6b7280;
+        }
+
+        /* Tag input styles */
+        .tag-input-container {
+            border: 1px solid #d1d5db;
+            border-radius: 0.5rem;
+            padding: 0.5rem;
+            min-height: 2.5rem;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.25rem;
+            align-items: center;
+            background: white;
+        }
+        .tag-input-container:focus-within {
+            border-color: #f97316;
+            box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+        }
+        .tag-item {
+            background: #e0e7ff;
+            color: #3730a3;
+            padding: 0.25rem 0.5rem;
+            border-radius: 0.375rem;
+            font-size: 0.875rem;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
+        }
+        .tag-item-remove {
+            cursor: pointer;
+            color: #6b7280;
+            font-weight: bold;
+        }
+        .tag-item-remove:hover {
+            color: #dc2626;
+        }
+        .tag-input {
+            border: none;
+            outline: none;
+            padding: 0.25rem;
+            font-size: 0.875rem;
+            flex: 1;
+            min-width: 120px;
+        }
+        .tag-suggestions {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 0.375rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            position: absolute;
+            z-index: 10;
+            max-height: 200px;
+            overflow-y: auto;
+            width: 100%;
+        }
+        .tag-suggestion-item {
+            padding: 0.5rem 0.75rem;
+            cursor: pointer;
+            font-size: 0.875rem;
+            border-bottom: 1px solid #f3f4f6;
+        }
+        .tag-suggestion-item:hover {
+            background: #f9fafb;
+        }
+        .tag-suggestion-item:last-child {
+            border-bottom: none;
         }
 
         /* Enhanced mobile responsiveness */
@@ -300,6 +380,7 @@ const Gear = (p={}) => Icon([React.createElement('circle',{cx:12,cy:12,r:3}),
 const RefreshCw = (p={}) => Icon([React.createElement('polyline',{points:'23,4 23,10 17,10'}),
                                   React.createElement('polyline',{points:'1,20 1,14 7,14'}),
                                   React.createElement('path',{d:'M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15'})], p);
+const Shield = (p={}) => Icon([React.createElement('path',{d:'M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z'})], p);
 
 /** ===== Local + Cloud storage layer ===== */
 const LOCAL_KEY = 'familyMealPlannerRecipes';
@@ -308,8 +389,8 @@ const DEFAULT_SAMPLE = [{
     id: 1,
     name: "Spaghetti Carbonara",
     category: "Italian",
-    type: "Pasta",
-    purpose: "Meal",
+    types: ["Pasta", "Main Course"], // Updated to array
+    purposes: ["Meal", "Dinner"], // Updated to array
     videoUrl: "https://www.youtube.com/embed/3AAdKl1UYZs",
     ingredients: [
         { name: "Spaghetti", quantity: "400", unit: "g" },
@@ -347,6 +428,29 @@ function setSyncHeader(mode, text, badge) {
             box.classList.remove('badge-success','badge-warn','badge-danger');
         }
     } catch(e){}
+}
+
+// Data migration helper: convert old single-value type/purpose to arrays
+function migrateRecipeData(recipe) {
+    const migrated = { ...recipe };
+    
+    // Migrate type -> types
+    if (migrated.type && !migrated.types) {
+        migrated.types = [migrated.type];
+        delete migrated.type;
+    } else if (!migrated.types) {
+        migrated.types = [];
+    }
+    
+    // Migrate purpose -> purposes
+    if (migrated.purpose && !migrated.purposes) {
+        migrated.purposes = [migrated.purpose];
+        delete migrated.purpose;
+    } else if (!migrated.purposes) {
+        migrated.purposes = [];
+    }
+    
+    return migrated;
 }
 
 // Initialize Firebase using either a global constant or saved config
@@ -393,7 +497,9 @@ function readLocal() {
         const meta = JSON.parse(localStorage.getItem(META_KEY) || '{"lastUpdated": null}');
         if (!raw) return { recipes: DEFAULT_SAMPLE, lastUpdated: meta.lastUpdated || nowIso() };
         const arr = JSON.parse(raw);
-        return { recipes: Array.isArray(arr) ? arr : DEFAULT_SAMPLE, lastUpdated: meta.lastUpdated || nowIso() };
+        // Migrate data
+        const migratedRecipes = Array.isArray(arr) ? arr.map(migrateRecipeData) : DEFAULT_SAMPLE;
+        return { recipes: migratedRecipes, lastUpdated: meta.lastUpdated || nowIso() };
     } catch(e){
         console.warn('Local read failed, using sample:', e);
         return { recipes: DEFAULT_SAMPLE, lastUpdated: nowIso() };
@@ -414,7 +520,8 @@ async function readCloudOnce() {
     const snap = await getDocRef().get();
     if (!snap.exists) return null;
     const data = snap.data();
-    return { recipes: Array.isArray(data?.recipes) ? data.recipes : [], lastUpdated: data?.lastUpdated || null };
+    const cloudRecipes = Array.isArray(data?.recipes) ? data.recipes.map(migrateRecipeData) : [];
+    return { recipes: cloudRecipes, lastUpdated: data?.lastUpdated || null };
 }
 
 // Push to Firestore
@@ -430,13 +537,96 @@ function subscribeCloud(onData) {
     fb.unsub = getDocRef().onSnapshot((snap)=>{
         const data = snap.data();
         if (!data) return;
-        onData({ recipes: Array.isArray(data.recipes) ? data.recipes : [], lastUpdated: data.lastUpdated || null });
+        const cloudRecipes = Array.isArray(data.recipes) ? data.recipes.map(migrateRecipeData) : [];
+        onData({ recipes: cloudRecipes, lastUpdated: data.lastUpdated || null });
     });
+}
+
+// Tag input component
+function TagInput({ label, values = [], onChange, suggestions = [], placeholder = "Add tag..." }) {
+    const [inputValue, setInputValue] = useState('');
+    const [showSuggestions, setShowSuggestions] = useState(false);
+    const inputRef = useRef();
+
+    const filteredSuggestions = useMemo(() => {
+        if (!inputValue.trim()) return suggestions;
+        return suggestions.filter(s => 
+            s.toLowerCase().includes(inputValue.toLowerCase()) &&
+            !values.includes(s)
+        );
+    }, [inputValue, suggestions, values]);
+
+    const addTag = (tag) => {
+        const trimmedTag = tag.trim();
+        if (trimmedTag && !values.includes(trimmedTag)) {
+            onChange([...values, trimmedTag]);
+        }
+        setInputValue('');
+        setShowSuggestions(false);
+    };
+
+    const removeTag = (index) => {
+        onChange(values.filter((_, i) => i !== index));
+    };
+
+    const handleKeyDown = (e) => {
+        if (e.key === 'Enter' && inputValue.trim()) {
+            e.preventDefault();
+            addTag(inputValue);
+        } else if (e.key === 'Backspace' && !inputValue && values.length > 0) {
+            removeTag(values.length - 1);
+        }
+    };
+
+    return React.createElement('div', { style: { position: 'relative' } },
+        React.createElement('label', { className: 'small', style: { display: 'block', marginBottom: '0.25rem' } }, label),
+        React.createElement('div', { className: 'tag-input-container' },
+            ...values.map((tag, index) =>
+                React.createElement('span', { key: index, className: 'tag-item' },
+                    tag,
+                    React.createElement('span', {
+                        className: 'tag-item-remove',
+                        onClick: () => removeTag(index),
+                        title: 'Remove tag'
+                    }, '×')
+                )
+            ),
+            React.createElement('input', {
+                ref: inputRef,
+                type: 'text',
+                className: 'tag-input',
+                placeholder,
+                value: inputValue,
+                onChange: (e) => setInputValue(e.target.value),
+                onKeyDown: handleKeyDown,
+                onFocus: () => setShowSuggestions(true),
+                onBlur: () => setTimeout(() => setShowSuggestions(false), 200)
+            })
+        ),
+        showSuggestions && filteredSuggestions.length > 0 &&
+            React.createElement('div', { className: 'tag-suggestions' },
+                ...filteredSuggestions.map(suggestion =>
+                    React.createElement('div', {
+                        key: suggestion,
+                        className: 'tag-suggestion-item',
+                        onClick: () => addTag(suggestion)
+                    }, suggestion)
+                )
+            )
+    );
 }
 
 function FamilyMealPlannerApp(){
     const [recipes, setRecipes] = useState([]);
-    const [currentRecipe, setCurrentRecipe] = useState({ name:'', category:'', type:'', purpose:'', videoUrl:'', ingredients:[{name:'',quantity:'',unit:''}], instructions:[''] });
+    const [currentRecipe, setCurrentRecipe] = useState({ 
+        name:'', 
+        category:'', 
+        types: [], // Changed to array
+        purposes: [], // Changed to array
+        videoUrl:'', 
+        ingredients:[{name:'',quantity:'',unit:''}], 
+        instructions:[''] 
+    });
     const [showForm, setShowForm] = useState(false);
     const [editingId, setEditingId] = useState(null);
     const [searchTerm, setSearchTerm] = useState('');
@@ -448,15 +638,59 @@ function FamilyMealPlannerApp(){
     const [showSettings, setShowSettings] = useState(false);
     const [configJson, setConfigJson] = useState(localStorage.getItem('fmp_firebase_config') || '');
 
+    // NEW: Owner system
+    const [isOwner, setIsOwner] = useState(false);
+
     // NEW: per-card expand/collapse state
     const [expandedCards, setExpandedCards] = useState({}); // { [id]: true|false }
 
     const categories = ['Italian','Asian','Mexican','American','French','Mediterranean','Indian','Chinese'];
-    const types = ['Pasta','Meat','Vegetable','Soup','Salad','Rice','Chicken','Beef','Seafood','Cake','Cookies'];
-    const purposes = ['Breakfast','Meal','Dessert','Snack','Appetizer'];
+    const typeSuggestions = ['Pasta','Meat','Vegetable','Soup','Salad','Rice','Chicken','Beef','Seafood','Cake','Cookies','Main Course','Side Dish','Appetizer','Dessert','Snack','Quick & Easy','One Pot','Slow Cooker','Grilled','Baked','Fried','Steamed','Raw'];
+    const purposeSuggestions = ['Breakfast','Lunch','Dinner','Meal','Dessert','Snack','Appetizer','Brunch','Late Night','Party','Holiday','Weeknight','Weekend','Meal Prep'];
     const units = ['g','kg','ml','l','cups','tbsp','tsp','pieces','slices'];
 
     const lastCloudDataRef = useRef(null);
+
+    // Get all unique types and purposes from existing recipes for filter dropdowns
+    const allTypes = useMemo(() => {
+        const typeSet = new Set();
+        recipes.forEach(recipe => {
+            if (Array.isArray(recipe.types)) {
+                recipe.types.forEach(type => typeSet.add(type));
+            }
+        });
+        return Array.from(typeSet).sort();
+    }, [recipes]);
+
+    const allPurposes = useMemo(() => {
+        const purposeSet = new Set();
+        recipes.forEach(recipe => {
+            if (Array.isArray(recipe.purposes)) {
+                recipe.purposes.forEach(purpose => purposeSet.add(purpose));
+            }
+        });
+        return Array.from(purposeSet).sort();
+    }, [recipes]);
+
+    // Owner access check on load
+    useEffect(() => {
+        const savedOwner = localStorage.getItem('familyRecipeOwner');
+        setIsOwner(savedOwner === 'true');
+    }, []);
+
+    // Owner verification function
+    const handleOwnerAccess = () => {
+        const ownerCode = prompt('Enter owner code to enable recipe editing:');
+        const correctCode = 'FamilyChef2024'; // CHANGE THIS TO YOUR SECRET CODE
+        
+        if (ownerCode === correctCode) {
+            localStorage.setItem('familyRecipeOwner', 'true');
+            setIsOwner(true);
+            alert('Owner access enabled! You can now add, edit, and delete recipes.');
+        } else if (ownerCode !== null) { // null means they cancelled
+            alert('Incorrect code. Contact the family recipe manager for access.');
+        }
+    };
 
     // Boot: load local, then attempt init firebase (if config present) and merge
     useEffect(()=>{
@@ -528,20 +762,22 @@ function FamilyMealPlannerApp(){
             if (!recipe || typeof recipe !== 'object') return false;
             const recipeName = String(recipe.name || '');
             const recipeCategory = String(recipe.category || '');
-            const recipeType = String(recipe.type || '');
-            const recipePurpose = String(recipe.purpose || '');
+            const recipeTypes = Array.isArray(recipe.types) ? recipe.types : [];
+            const recipePurposes = Array.isArray(recipe.purposes) ? recipe.purposes : [];
             const recipeIngredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
+            
             const matchesSearch = recipeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 recipeIngredients.some(ing => (ing && typeof ing === 'object' && String(ing.name || '').toLowerCase().includes(searchTerm.toLowerCase())));
             const matchesCategory = !filters.category || recipeCategory === filters.category;
-            const matchesType = !filters.type || recipeType === filters.type;
-            const matchesPurpose = !filters.purpose || recipePurpose === filters.purpose;
+            const matchesType = !filters.type || recipeTypes.includes(filters.type);
+            const matchesPurpose = !filters.purpose || recipePurposes.includes(filters.purpose);
+            
             return matchesSearch && matchesCategory && matchesType && matchesPurpose;
         });
     }, [recipes, searchTerm, filters]);
 
     const resetForm = () => {
-        setCurrentRecipe({ name:'', category:'', type:'', purpose:'', videoUrl:'', ingredients:[{name:'',quantity:'',unit:''}], instructions:[''] });
+        setCurrentRecipe({ name:'', category:'', types: [], purposes: [], videoUrl:'', ingredients:[{name:'',quantity:'',unit:''}], instructions:[''] });
         setEditingId(null);
     };
 
@@ -551,8 +787,8 @@ function FamilyMealPlannerApp(){
             const cleanRecipe = {
                 name: String(currentRecipe.name || '').trim(),
                 category: String(currentRecipe.category || ''),
-                type: String(currentRecipe.type || ''),
-                purpose: String(currentRecipe.purpose || ''),
+                types: Array.isArray(currentRecipe.types) ? currentRecipe.types : [],
+                purposes: Array.isArray(currentRecipe.purposes) ? currentRecipe.purposes : [],
                 videoUrl: String(currentRecipe.videoUrl || ''),
                 ingredients: Array.isArray(currentRecipe.ingredients) ?
                    currentRecipe.ingredients.filter(ing => ing && ing.name && ing.name.trim()).map(ing => ({ name:String(ing.name||'').trim(), quantity:String(ing.quantity||''), unit:String(ing.unit||'') })) : [],
@@ -570,14 +806,15 @@ function FamilyMealPlannerApp(){
 
     const editRecipe = (recipe) => {
         if (!recipe) return;
+        const migrated = migrateRecipeData(recipe);
         const safe = {
-            name: String(recipe.name||''),
-            category: String(recipe.category||''),
-            type: String(recipe.type||''),
-            purpose: String(recipe.purpose||''),
-            videoUrl: String(recipe.videoUrl||''),
-            ingredients: Array.isArray(recipe.ingredients) ? recipe.ingredients.map(ing => ({ name:String(ing?.name||''), quantity:String(ing?.quantity||''), unit:String(ing?.unit||'') })) : [{name:'',quantity:'',unit:''}],
-            instructions: Array.isArray(recipe.instructions) ? recipe.instructions.filter(s=>s && typeof s==='string').map(s=>String(s)) : ['']
+            name: String(migrated.name||''),
+            category: String(migrated.category||''),
+            types: Array.isArray(migrated.types) ? migrated.types : [],
+            purposes: Array.isArray(migrated.purposes) ? migrated.purposes : [],
+            videoUrl: String(migrated.videoUrl||''),
+            ingredients: Array.isArray(migrated.ingredients) ? migrated.ingredients.map(ing => ({ name:String(ing?.name||''), quantity:String(ing?.quantity||''), unit:String(ing?.unit||'') })) : [{name:'',quantity:'',unit:''}],
+            instructions: Array.isArray(migrated.instructions) ? migrated.instructions.filter(s=>s && typeof s==='string').map(s=>String(s)) : ['']
         };
         setCurrentRecipe(safe);
         setEditingId(recipe.id || null);
@@ -610,7 +847,19 @@ function FamilyMealPlannerApp(){
                 const imported = JSON.parse(ev.target.result);
                 if (!Array.isArray(imported) || imported.length===0){ alert('No valid recipes in file.'); return; }
                 if (window.confirm(`Import ${imported.length} recipe(s) and replace current list?`)){
-                    const withIds = imported.map((r,i)=>({ id: Date.now()+i, name:r.name||'Untitled', category:r.category||'', type:r.type||'', purpose:r.purpose||'', videoUrl:r.videoUrl||'', ingredients:Array.isArray(r.ingredients)?r.ingredients:[], instructions:Array.isArray(r.instructions)?r.instructions:[] }));
+                    const withIds = imported.map((r,i)=>{
+                        const migrated = migrateRecipeData(r);
+                        return { 
+                            id: Date.now()+i, 
+                            name: migrated.name||'Untitled', 
+                            category: migrated.category||'', 
+                            types: migrated.types||[], 
+                            purposes: migrated.purposes||[], 
+                            videoUrl: migrated.videoUrl||'', 
+                            ingredients: Array.isArray(migrated.ingredients) ? migrated.ingredients : [], 
+                            instructions: Array.isArray(migrated.instructions) ? migrated.instructions : [] 
+                        };
+                    });
                     setRecipes(withIds);
                 }
             } catch(err){ alert('Invalid JSON file.'); }
@@ -694,15 +943,38 @@ function FamilyMealPlannerApp(){
                     // Top section: Main recipe management controls
                     React.createElement('div', { className:'control-row' },
                         React.createElement('div', { className:'control-group' },
-                            React.createElement('button', { onClick:()=>setShowForm(true), className:'btn btn-primary' }, React.createElement(Plus), 'Add Recipe'),
+                            // Add Recipe button - conditional based on owner status
+                            isOwner ? 
+                                React.createElement('button', { 
+                                    onClick: () => setShowForm(true), 
+                                    className: 'btn btn-primary' 
+                                }, React.createElement(Plus), 'Add Recipe')
+                            :
+                                React.createElement('button', { 
+                                    onClick: handleOwnerAccess, 
+                                    className: 'btn btn-neutral',
+                                    title: 'Get permission to add/edit recipes'
+                                }, React.createElement(Shield), 'Request Edit Access'),
+                            
+                            // Export (everyone can export)
                             React.createElement('button', { onClick: exportRecipes, className:'btn btn-secondary', title:'Export all recipes as JSON' }, React.createElement(Download), 'Export'),
-                            React.createElement('label', { className:'btn btn-accent' }, React.createElement(Upload), 'Import',
+                            
+                            // Import - only for owners
+                            isOwner && React.createElement('label', { className:'btn btn-accent' }, React.createElement(Upload), 'Import',
                                 React.createElement('input', { type:'file', accept:'.json', onChange: importRecipes, className:'hidden' }))
                         ),
                         React.createElement('div', { className:'form-group' },
                             React.createElement(Users, null),
                             React.createElement('span', { style:{ color:'#6b7280', fontWeight:500 } }, 'Family Size:'),
                             React.createElement('input', { type:'number', min:'1', max:'20', value: familySize, onChange:(e)=> setFamilySize(Number(e.target.value)), style:{ width:'4rem', textAlign:'center', border:'1px solid #d1d5db', borderRadius:'0.5rem', padding:'0.25rem 0.5rem' } })
+                        )
+                    ),
+
+                    // Owner indicator
+                    isOwner && React.createElement('div', { style: { marginTop: '1rem' } },
+                        React.createElement('div', { className: 'owner-indicator' },
+                            React.createElement(Shield, { style: { width: '16px', height: '16px' } }),
+                            'Owner Mode: Editing Enabled'
                         )
                     ),
 
@@ -739,15 +1011,15 @@ function FamilyMealPlannerApp(){
                         React.createElement('div', { className:'filter-grid' },
                             React.createElement('select', { value:filters.category, onChange:(e)=> setFilters({...filters, category:e.target.value}), className:'form-input' },
                                 React.createElement('option', { value:'' }, 'All Categories'),
-                                ['Italian','Asian','Mexican','American','French','Mediterranean','Indian','Chinese'].map(cat => React.createElement('option', { key:cat, value:cat }, cat))
+                                categories.map(cat => React.createElement('option', { key:cat, value:cat }, cat))
                             ),
                             React.createElement('select', { value:filters.type, onChange:(e)=> setFilters({...filters, type:e.target.value}), className:'form-input' },
                                 React.createElement('option', { value:'' }, 'All Types'),
-                                ['Pasta','Meat','Vegetable','Soup','Salad','Rice','Chicken','Beef','Seafood','Cake','Cookies'].map(t => React.createElement('option', { key:t, value:t }, t))
+                                allTypes.map(t => React.createElement('option', { key:t, value:t }, t))
                             ),
                             React.createElement('select', { value:filters.purpose, onChange:(e)=> setFilters({...filters, purpose:e.target.value}), className:'form-input' },
                                 React.createElement('option', { value:'' }, 'All Purposes'),
-                                ['Breakfast','Meal','Dessert','Snack','Appetizer'].map(p => React.createElement('option', { key:p, value:p }, p))
+                                allPurposes.map(p => React.createElement('option', { key:p, value:p }, p))
                             )
                         )
                     )
@@ -771,24 +1043,33 @@ function FamilyMealPlannerApp(){
                                     React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Category'),
                                     React.createElement('select', { value: currentRecipe.category, onChange:(e)=> setCurrentRecipe({...currentRecipe, category:e.target.value}), className:'form-input' },
                                         React.createElement('option', { value:'' }, 'Select Category'),
-                                        ['Italian','Asian','Mexican','American','French','Mediterranean','Indian','Chinese'].map(cat => React.createElement('option', { key:cat, value:cat }, cat))
-                                    )
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Type/Style'),
-                                    React.createElement('select', { value: currentRecipe.type, onChange:(e)=> setCurrentRecipe({...currentRecipe, type:e.target.value}), className:'form-input' },
-                                        React.createElement('option', { value:'' }, 'Select Type'),
-                                        ['Pasta','Meat','Vegetable','Soup','Salad','Rice','Chicken','Beef','Seafood','Cake','Cookies'].map(t => React.createElement('option', { key:t, value:t }, t))
-                                    )
-                                ),
-                                React.createElement('div', null,
-                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Purpose'),
-                                    React.createElement('select', { value: currentRecipe.purpose, onChange:(e)=> setCurrentRecipe({...currentRecipe, purpose:e.target.value}), className:'form-input' },
-                                        React.createElement('option', { value:'' }, 'Select Purpose'),
-                                        ['Breakfast','Meal','Dessert','Snack','Appetizer'].map(p => React.createElement('option', { key:p, value:p }, p))
+                                        categories.map(cat => React.createElement('option', { key:cat, value:cat }, cat))
                                     )
                                 )
                             ),
+                            
+                            // Types (Multi-tag input)
+                            React.createElement('div', { style:{ marginTop:'1rem' } },
+                                React.createElement(TagInput, {
+                                    label: 'Types/Styles (e.g., Pasta, Main Course, Quick & Easy)',
+                                    values: currentRecipe.types,
+                                    onChange: (newTypes) => setCurrentRecipe({...currentRecipe, types: newTypes}),
+                                    suggestions: typeSuggestions,
+                                    placeholder: 'Add type or style...'
+                                })
+                            ),
+                            
+                            // Purposes (Multi-tag input)
+                            React.createElement('div', { style:{ marginTop:'1rem' } },
+                                React.createElement(TagInput, {
+                                    label: 'Purposes/Occasions (e.g., Breakfast, Dinner, Holiday)',
+                                    values: currentRecipe.purposes,
+                                    onChange: (newPurposes) => setCurrentRecipe({...currentRecipe, purposes: newPurposes}),
+                                    suggestions: purposeSuggestions,
+                                    placeholder: 'Add purpose or occasion...'
+                                })
+                            ),
+                            
                             // Ingredients
                             React.createElement('div', { style:{ marginTop:'1rem' } },
                                 React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' } },
@@ -843,8 +1124,8 @@ function FamilyMealPlannerApp(){
                         React.createElement('div', { className:'modal-header' }, React.createElement('h2', { className:'modal-title' }, 'Cloud Sync Settings (Firebase)') ),
                         React.createElement('div', { className:'modal-body' },
                             React.createElement('p', { className:'small' }, 'Paste your Firebase web config JSON here (Project settings → General → Your apps → SDK setup & configuration → Config).'),
-                            React.createElement('textarea', { className:'form-input', rows:8, placeholder:'{\\n  \"apiKey\": \"...\",\\n  \"authDomain\":\"...\",\\n  \"projectId\":\"...\",\\n  \"appId\":\"...\"\\n}', value: configJson, onChange:(e)=> setConfigJson(e.target.value) }),
-                            React.createElement('p', { className:'small' }, 'Tip: Leave blank to keep using the last saved config. We use Anonymous Auth and store your recipes in Firestore under collection \"familyMealPlanner\" with your anonymous UID.')
+                            React.createElement('textarea', { className:'form-input', rows:8, placeholder:'{\n  "apiKey": "...",\n  "authDomain":"...",\n  "projectId":"...",\n  "appId":"..."\n}', value: configJson, onChange:(e)=> setConfigJson(e.target.value) }),
+                            React.createElement('p', { className:'small' }, 'Tip: Leave blank to keep using the last saved config. We use Anonymous Auth and store your recipes in Firestore under collection "familyMealPlanner" with your anonymous UID.')
                         ),
                         React.createElement('div', { className:'modal-actions' },
                             React.createElement('button', { className:'btn btn-neutral', onClick: ()=> setShowSettings(false) }, 'Close'),
@@ -882,8 +1163,8 @@ function FamilyMealPlannerApp(){
                                 const recipeId = recipe.id || `recipe-${index}`;
                                 const recipeName = String(recipe.name || 'Untitled Recipe');
                                 const recipeCategory = String(recipe.category || '');
-                                const recipeType = String(recipe.type || '');
-                                const recipePurpose = String(recipe.purpose || '');
+                                const recipeTypes = Array.isArray(recipe.types) ? recipe.types : [];
+                                const recipePurposes = Array.isArray(recipe.purposes) ? recipe.purposes : [];
                                 const recipeVideoUrl = String(recipe.videoUrl || '');
                                 const recipeIngredients = Array.isArray(recipe.ingredients) ? recipe.ingredients : [];
                                 const recipeInstructions = Array.isArray(recipe.instructions) ? recipe.instructions : [];
@@ -898,15 +1179,16 @@ function FamilyMealPlannerApp(){
                                     React.createElement('div', { className:'recipe-content' },
                                         React.createElement('div', { className:'recipe-header' },
                                             React.createElement('h3', { className: 'recipe-title' + (isExpanded ? '' : ' line-clamp-2') }, recipeName),
-                                            React.createElement('div', { className:'recipe-actions' },
+                                            // Only show edit/delete buttons if user is owner
+                                            isOwner && React.createElement('div', { className:'recipe-actions' },
                                                 React.createElement('button', { onClick: ()=> editRecipe(recipe), className:'action-btn edit-btn', title:'Edit recipe' }, React.createElement(Edit2)),
                                                 React.createElement('button', { onClick: ()=> deleteRecipe(recipeId), className:'action-btn trash-btn', title:'Delete recipe' }, React.createElement(Trash2))
                                             )
                                         ),
                                         React.createElement('div', { className:'recipe-tags' },
                                             recipeCategory && React.createElement('span', { className:'tag tag-category' }, recipeCategory),
-                                            recipeType && React.createElement('span', { className:'tag tag-type' }, recipeType),
-                                            recipePurpose && React.createElement('span', { className:'tag tag-purpose' }, recipePurpose)
+                                            ...recipeTypes.map((type, idx) => React.createElement('span', { key: `type-${idx}`, className:'tag tag-type' }, type)),
+                                            ...recipePurposes.map((purpose, idx) => React.createElement('span', { key: `purpose-${idx}`, className:'tag tag-purpose' }, purpose))
                                         ),
                                         React.createElement('div', { className:'recipe-section' },
                                             React.createElement('div', { className:'section-header-small' },
