@@ -105,6 +105,21 @@
         .recipe-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.5rem; }
         .recipe-title { font-size: 1.15rem; font-weight: 700; color: #1f2937; margin: 0; flex: 1; margin-right: 1rem; }
         .recipe-actions { display: flex; gap: 0.5rem; }
+	
+	.recipe-video.shorts-video {
+    	    display: flex;
+    	    justify-content: center;
+    	    align-items: center;
+    	    background: #000;
+	}
+
+	.recipe-video.shorts-video iframe {
+    	    width: auto;
+    	    height: 100%;
+    	    aspect-ratio: 9/16;
+   	    max-width: 108px; /* Maintains 9:16 aspect ratio within 192px height */
+	}
+
 
         .action-btn { padding: 0.5rem; border: none; border-radius: 0.5rem; cursor: pointer; transition: background 0.2s; }
         .edit-btn { color: #2563eb; background: #eff6ff; }
@@ -292,6 +307,15 @@
             .modal-actions .btn { width: 100%; justify-content: center; }
             .form-grid { grid-template-columns: 1fr !important; }
         }
+
+    .recipe-video.shorts-video {
+        height: 256px; /* Slightly taller for desktop */
+    }
+    
+    .recipe-video.shorts-video iframe {
+        max-width: 144px; /* 256px * 9/16 */
+    }
+}
         
         @media (max-width: 480px) {
             .header-title { font-size: clamp(1.25rem, 3.5vw, 1.75rem); }
@@ -547,39 +571,34 @@ function subscribeCloud(onData) {
 const extractVideoId = (url) => {
     if (!url) return null;
     
-    // Clean the URL and handle various YouTube URL formats
     const cleanUrl = url.trim();
     
-    // Multiple regex patterns to handle different YouTube URL formats
+    // Multiple regex patterns including YouTube Shorts
     const patterns = [
+        // YouTube Shorts URLs - prioritize these
+        /(?:youtube\.com\/shorts\/)([a-zA-Z0-9_-]{11})/,
+        /(?:youtu\.be\/shorts\/)([a-zA-Z0-9_-]{11})/,
+        
         // Standard YouTube watch URLs
         /(?:youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
-        // YouTube share URLs (youtu.be)
         /(?:youtu\.be\/)([a-zA-Z0-9_-]{11})/,
-        // YouTube embed URLs
         /(?:youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
-        // Mobile YouTube URLs
         /(?:m\.youtube\.com\/watch\?v=)([a-zA-Z0-9_-]{11})/,
-        // YouTube URLs with additional parameters
         /(?:youtube\.com\/watch\?.*v=)([a-zA-Z0-9_-]{11})/,
-        // YouTube playlist URLs (extract video ID)
-        /(?:youtube\.com\/watch\?.*v=)([a-zA-Z0-9_-]{11}).*&list=/,
-        // Any other YouTube domain variations
         /(?:.*youtube.*[?&]v=)([a-zA-Z0-9_-]{11})/
     ];
     
     for (const pattern of patterns) {
         const match = cleanUrl.match(pattern);
-        if (match && match[1]) {
-            // Additional validation: YouTube video IDs are always 11 characters
-            if (match[1].length === 11) {
-                return match[1];
-            }
+        if (match && match[1] && match[1].length === 11) {
+            return match[1];
         }
     }
     
     return null;
 };
+
+
 
 // Tag input component
 function TagInput({ label, values = [], onChange, suggestions = [], placeholder = "Add tag..." }) {
@@ -793,6 +812,13 @@ function FamilyMealPlannerApp(){
             }).catch(e=> console.error('Cloud write failed', e));
         }
     }, [recipes]);
+
+
+const isYouTubeShort = (url) => {
+    if (!url) return false;
+    return /youtube\.com\/shorts\/|youtu\.be\/shorts\//.test(url.trim());
+};
+
 
     // UI helpers
     const filteredRecipes = useMemo(()=>{
@@ -1211,20 +1237,24 @@ function FamilyMealPlannerApp(){
 
                                 // Debug YouTube embedding
                                 const videoId = extractVideoId(recipeVideoUrl);
+				const isShort = isYouTubeShort(recipeVideoUrl);
                                 // Uncomment these lines for debugging:
                                 // console.log('Recipe:', recipeName, 'Video URL:', recipeVideoUrl, 'Video ID:', videoId);
 
-                                return React.createElement('div', { key: recipeId, className:'recipe-card' },
-                                    recipeVideoUrl && videoId && React.createElement('div', { className:'recipe-video' },
-                                        React.createElement('iframe', { 
-                                            src:`https://www.youtube.com/embed/${videoId}`, 
-                                            style:{ width:'100%', height:'100%', border:'none' }, 
-                                            frameBorder:'0', 
-                                            allowFullScreen:true, 
-                                            title: recipeName,
-                                            loading: 'lazy' // Improve performance
-                                        })
-                                    ),
+return React.createElement('div', { key: recipeId, className:'recipe-card' },
+    recipeVideoUrl && videoId && React.createElement('div', { 
+        className: `recipe-video ${isShort ? 'shorts-video' : ''}` 
+    },
+        React.createElement('iframe', { 
+            src: `https://www.youtube.com/embed/${videoId}`, 
+            style: { width:'100%', height:'100%', border:'none' }, 
+            frameBorder: '0', 
+            allowFullScreen: true, 
+            title: recipeName,
+            loading: 'lazy'
+        })
+    ),
+
                                     React.createElement('div', { className:'recipe-content' },
                                         React.createElement('div', { className:'recipe-header' },
                                             React.createElement('h3', { className: 'recipe-title' + (isExpanded ? '' : ' line-clamp-2') }, recipeName),
