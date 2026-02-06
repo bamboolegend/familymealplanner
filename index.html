@@ -35,6 +35,8 @@
         .header-gradient { background: linear-gradient(135deg, #f97316 0%, #ef4444 100%); }
         .header-container { padding: 2rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem; }
         .header-title { font-size: 2.25rem; font-weight: bold; color: white; margin: 0 0 0.5rem 0; display: flex; align-items: center; gap: 0.75rem; }
+        .title-text { display: inline; }
+        .title-chinese { white-space: nowrap; }
         .header-subtitle { color: rgba(255, 255, 255, 0.9); font-size: 0.95rem; margin: 0; }
 
         .recipe-counter { 
@@ -250,21 +252,33 @@
         /* Enhanced mobile responsiveness */
         @media (max-width: 768px) {
             .content-wrapper { padding: 1rem 0.5rem; }
-            .header-container { 
-                flex-direction: column; 
-                text-align: center; 
+            .header-container {
+                flex-direction: column;
+                text-align: center;
                 padding: 1.25rem 1rem;
                 gap: 1.25rem;
             }
-            .header-title { 
-                font-size: clamp(1.5rem, 4vw, 2rem);
-                line-height: 1.2;
+            .header-title {
+                font-size: clamp(1.3rem, 5vw, 1.8rem);
+                line-height: 1.4;
                 flex-wrap: wrap;
                 justify-content: center;
                 align-items: center;
+                flex-direction: column;
+                gap: 0.25rem;
             }
             .header-subtitle { font-size: 0.85rem; line-height: 1.6; }
-            .header-title .badge { margin-left: 0.75rem; vertical-align: middle; }
+            .header-title .badge { margin-left: 0; margin-top: 0.5rem; }
+
+            /* Title text: Chinese on new line for mobile */
+            .title-text { display: flex; flex-direction: column; align-items: center; }
+            .title-chinese { display: block; font-size: 0.85em; }
+
+            /* Hide button text on mobile, show only icons */
+            .storage-controls .btn span { display: none; }
+            .storage-controls .btn { padding: 0.6rem; min-width: auto; }
+            .storage-controls select { width: 7rem !important; font-size: 0.8rem; }
+            .storage-controls > span.small { font-size: 0.75rem; }
             .control-bar { padding: 1rem; }
             .control-row { flex-direction: column; align-items: stretch; gap: 1rem; }
             .control-group { flex-direction: column; width: 100%; gap: 0.75rem; }
@@ -321,7 +335,9 @@
 }
         
         @media (max-width: 480px) {
-            .header-title { font-size: clamp(1.25rem, 3.5vw, 1.75rem); }
+            .header-title { font-size: clamp(1.1rem, 4.5vw, 1.5rem); }
+            .title-chinese { font-size: 0.9em; }
+            .storage-controls select { width: 6rem !important; font-size: 0.75rem; padding: 0.4rem; }
             .search-input { padding: 0.625rem 0.75rem 0.625rem 2rem; font-size: 0.8rem; }
             .control-group .btn { padding: 0.625rem 1rem; font-size: 0.875rem; }
             .control-bar > div:nth-child(2) > div:first-child { gap: 0.2rem; }
@@ -347,7 +363,7 @@
                 <div class="header-gradient">
                     <div class="header-container">
                         <div>
-                            <h1 class="header-title">Family Meal Planner 家庭食谱</h1>
+                            <h1 class="header-title"><span class="title-text">Family Meal Planner <span class="title-chinese">家庭食谱</span></span></h1>
                             <p class="header-subtitle">Local-first recipes with optional Firebase sync 本地优先，支持跨设备云同步</p>
                         </div>
                         <div id="syncSummary" class="recipe-counter">
@@ -1004,7 +1020,11 @@ const isYouTubeShort = (url) => {
                 React.createElement('div', { className:'header-gradient' },
                     React.createElement('div', { className:'header-container' },
                         React.createElement('div', null,
-                            React.createElement('h1', { className:'header-title' }, React.createElement(ChefHat,{style:{width:'2.2rem',height:'2.2rem'}}), 'Family Meal Planner 家庭食谱', React.createElement(StorageBadge)),
+                            React.createElement('h1', { className:'header-title' },
+                                React.createElement(ChefHat,{style:{width:'2.2rem',height:'2.2rem'}}),
+                                React.createElement('span', { className:'title-text' }, 'Family Meal Planner ', React.createElement('span', { className:'title-chinese' }, '家庭食谱')),
+                                React.createElement(StorageBadge)
+                            ),
                             React.createElement('p', { className:'header-subtitle' }, 'Recipe organizer 食谱管理 • Local-first 本地优先 • Cloud sync 云同步')
                         ),
                         (recipes && recipes.length>0) && React.createElement('div', { className:'recipe-counter' },
@@ -1057,7 +1077,7 @@ const isYouTubeShort = (url) => {
 
                     // Middle section: App-level storage controls
                     React.createElement('div', { style:{ marginTop:'1rem', display:'flex', gap:'0.75rem', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between' } },
-                        React.createElement('div', { style:{ display:'flex', gap:'0.5rem', alignItems:'center' } },
+                        React.createElement('div', { className:'storage-controls', style:{ display:'flex', gap:'0.5rem', alignItems:'center' } },
                             React.createElement('span', { className:'small' }, 'Storage 存储:'),
                             React.createElement('select', { className:'form-input', style:{ width:'10rem' }, value: storageMode, onChange: async (e)=>{
                                 const val = e.target.value;
