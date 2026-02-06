@@ -367,6 +367,17 @@
 </div>
 
 <script>
+/** ===== Firebase Config (embedded for automatic cloud access) ===== */
+window.FAMILY_MEAL_PLANNER_FIREBASE_CONFIG = {
+    apiKey: "AIzaSyC78zipySQ91iklna3oLWY_hH-H3qgv4DQ",
+    authDomain: "familymealplanner-ac217.firebaseapp.com",
+    projectId: "familymealplanner-ac217",
+    storageBucket: "familymealplanner-ac217.firebasestorage.app",
+    messagingSenderId: "543525352254",
+    appId: "1:543525352254:web:b2f6e9f91800391981b26f",
+    measurementId: "G-EYEE56QNWE"
+};
+
 /** ===== Simple SVG icons ===== */
 const { useState, useEffect, useMemo, useRef } = React;
 const { createRoot } = ReactDOM;
@@ -765,56 +776,44 @@ function FamilyMealPlannerApp(){
             if (init.ok){
                 setStorageMode('Cloud');
                 setSyncInfo(s => ({...s, status:'Connected'}));
-                // merge strategy: prefer newer
+
+                // On boot: ALWAYS pull from cloud if it exists (safe for all users)
+                // Never push during boot - owner can manually sync if needed
                 const cloud = await readCloudOnce();
-                const localMeta = JSON.parse(localStorage.getItem(META_KEY) || '{"lastUpdated":null}');
-                const localTime = Date.parse(localMeta.lastUpdated || 0);
-                const cloudTime = Date.parse(cloud?.lastUpdated || 0);
                 if (cloud && cloud.recipes && cloud.recipes.length){
-                    if (!localTime || cloudTime >= localTime){
-                        setRecipes(cloud.recipes);
-                        writeLocal(cloud.recipes);
-                        setSyncInfo({ status:'Synced from cloud', lastSync: cloud.lastUpdated });
-                    } else {
-                        // local newer -> push up
-                        await writeCloud(local.recipes);
-                        setSyncInfo({ status:'Pushed local to cloud', lastSync: nowIso() });
-                    }
+                    setRecipes(cloud.recipes);
+                    writeLocal(cloud.recipes);
+                    setSyncInfo({ status:'Synced from cloud', lastSync: cloud.lastUpdated });
                 } else {
-                    // No cloud doc yet => seed with local
-                    await writeCloud(local.recipes);
-                    setSyncInfo({ status:'Seeded cloud from local', lastSync: nowIso() });
+                    // No cloud data - keep local, owner can push later via Sync button
+                    setSyncInfo({ status:'No cloud data (use Sync to upload)', lastSync: null });
                 }
 
-                // Realtime listener
+                // Realtime listener - always accept cloud updates (read-only is safe)
                 subscribeCloud(({recipes: r, lastUpdated})=>{
                     if (preventLoop) return;
                     lastCloudDataRef.current = { r, lastUpdated };
-                    const localMeta2 = JSON.parse(localStorage.getItem(META_KEY) || '{"lastUpdated":null}');
-                    const localTime2 = Date.parse(localMeta2.lastUpdated || 0);
-                    const cloudTime2 = Date.parse(lastUpdated || 0);
-                    if (cloudTime2 && (!localTime2 || cloudTime2 >= localTime2)){
-                        preventLoop = true;
-                        setRecipes(r);
-                        writeLocal(r);
-                        setSyncInfo({ status:'Live update from cloud', lastSync: lastUpdated });
-                        setTimeout(()=>{ preventLoop=false; }, 200);
-                    }
+                    preventLoop = true;
+                    setRecipes(r);
+                    writeLocal(r);
+                    setSyncInfo({ status:'Live update from cloud', lastSync: lastUpdated });
+                    setTimeout(()=>{ preventLoop=false; }, 200);
                 });
             }
         })();
     }, []);
 
-    // Persist locally on changes; if Cloud mode and not from cloud, also push
+    // Persist locally on changes; if Cloud mode and OWNER, also push to cloud
+    // Non-owners can read from cloud but never write (read-only cloud access)
     useEffect(()=>{
         if (!recipes) return;
         writeLocal(recipes);
-        if (storageMode === 'Cloud' && cloudEnabled && !preventLoop){
+        if (storageMode === 'Cloud' && cloudEnabled && !preventLoop && isOwner){
             writeCloud(recipes).then(()=>{
-                setSyncInfo(s=> ({...s, status: 'Pushed to cloud', lastSync: nowIso()}));
+                setSyncInfo(s=> ({...s, status: 'Pushed to cloud (Owner)', lastSync: nowIso()}));
             }).catch(e=> console.error('Cloud write failed', e));
         }
-    }, [recipes]);
+    }, [recipes, isOwner]);
 
 
 const isYouTubeShort = (url) => {
@@ -964,18 +963,30 @@ const isYouTubeShort = (url) => {
         const localMeta = JSON.parse(localStorage.getItem(META_KEY) || '{"lastUpdated":null}');
         const localTime = Date.parse(localMeta.lastUpdated || 0);
         const cloudTime = Date.parse(cloud?.lastUpdated || 0);
+
         if (cloud && cloud.recipes && cloud.recipes.length){
             if (!localTime || cloudTime >= localTime){
+                // Pull from cloud (everyone can do this)
                 setRecipes(cloud.recipes);
                 writeLocal(cloud.recipes);
-                setSyncInfo({ status:'Manual sync from cloud', lastSync: cloud.lastUpdated });
-            } else {
+                setSyncInfo({ status:'Synced from cloud', lastSync: cloud.lastUpdated });
+            } else if (isOwner) {
+                // Push to cloud (only owner can do this)
                 await writeCloud(recipes);
-                setSyncInfo({ status:'Manual push to cloud', lastSync: nowIso() });
+                setSyncInfo({ status:'Pushed to cloud (Owner)', lastSync: nowIso() });
+            } else {
+                // Non-owner with newer local data - just pull cloud to stay consistent
+                setRecipes(cloud.recipes);
+                writeLocal(cloud.recipes);
+                setSyncInfo({ status:'Synced from cloud (read-only)', lastSync: cloud.lastUpdated });
+                alert('Your local changes were not saved to cloud. Only the owner can modify the shared recipes.');
             }
-        } else {
+        } else if (isOwner) {
+            // No cloud data yet - owner can seed it
             await writeCloud(recipes);
-            setSyncInfo({ status:'Seeded cloud', lastSync: nowIso() });
+            setSyncInfo({ status:'Seeded cloud (Owner)', lastSync: nowIso() });
+        } else {
+            alert('No cloud data available yet. Ask the owner to sync first.');
         }
     };
 
