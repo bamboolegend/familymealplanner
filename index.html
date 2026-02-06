@@ -347,19 +347,19 @@
                 <div class="header-gradient">
                     <div class="header-container">
                         <div>
-                            <h1 class="header-title">Family Meal Planner</h1>
-                            <p class="header-subtitle">Local-first recipes with optional Firebase sync across devices</p>
+                            <h1 class="header-title">Family Meal Planner 家庭食谱</h1>
+                            <p class="header-subtitle">Local-first recipes with optional Firebase sync 本地优先，支持跨设备云同步</p>
                         </div>
                         <div id="syncSummary" class="recipe-counter">
                             <div class="recipe-count" id="syncModeLabel">Local</div>
-                            <div class="recipe-label">Storage Mode</div>
-                            <div class="small" id="syncStatusText">Not connected</div>
+                            <div class="recipe-label">Storage Mode 存储模式</div>
+                            <div class="small" id="syncStatusText">Not connected 未连接</div>
                         </div>
                     </div>
                 </div>
                 <div style="padding: 2rem; text-align: center;">
-                    <p>Please wait while the app loads...</p>
-                    <p style="color: #666; font-size: 0.9rem;">If this message persists, please check your JavaScript is enabled.</p>
+                    <p>Please wait while the app loads... 请稍候，应用正在加载...</p>
+                    <p style="color: #666; font-size: 0.9rem;">If this message persists, please check your JavaScript is enabled. 如果此消息持续显示，请检查是否已启用JavaScript。</p>
                 </div>
             </div>
         </div>
@@ -496,7 +496,7 @@ async function initFirebaseIfPossible(configFromUser=null) {
     try {
         const cfg = configFromUser || window.FAMILY_MEAL_PLANNER_FIREBASE_CONFIG || JSON.parse(localStorage.getItem('fmp_firebase_config')||'null');
         if (!cfg) {
-            setSyncHeader('Local', 'Not connected');
+            setSyncHeader('Local', 'Not connected 未连接');
             return { ok:false, reason:'No firebase config' };
         }
         if (!firebase?.apps?.length) {
@@ -659,7 +659,7 @@ function TagInput({ label, values = [], onChange, suggestions = [], placeholder 
                     React.createElement('span', {
                         className: 'tag-item-remove',
                         onClick: () => removeTag(index),
-                        title: 'Remove tag'
+                        title: 'Remove tag 删除标签'
                     }, '×')
                 )
             ),
@@ -706,7 +706,7 @@ function FamilyMealPlannerApp(){
     const [familySize, setFamilySize] = useState(4);
     const [showFilters, setShowFilters] = useState(false);
     const [storageMode, setStorageMode] = useState('Local'); // 'Local' | 'Cloud'
-    const [syncInfo, setSyncInfo] = useState({ status:'Not connected', lastSync:null });
+    const [syncInfo, setSyncInfo] = useState({ status:'Not connected 未连接', lastSync:null });
     const [showSettings, setShowSettings] = useState(false);
     const [configJson, setConfigJson] = useState(localStorage.getItem('fmp_firebase_config') || '');
 
@@ -752,7 +752,7 @@ function FamilyMealPlannerApp(){
 
     // Owner verification function
     const handleOwnerAccess = () => {
-        const ownerCode = prompt('Enter owner code to enable recipe editing:');
+        const ownerCode = prompt('Enter owner code to enable recipe editing: 输入所有者代码以启用编辑：');
         const correctCode = '7997'; // CHANGE THIS TO YOUR SECRET CODE
         
         if (ownerCode === correctCode) {
@@ -768,14 +768,14 @@ function FamilyMealPlannerApp(){
     useEffect(()=>{
         const local = readLocal();
         setRecipes(local.recipes);
-        setSyncInfo({ status: 'Loaded local', lastSync: local.lastUpdated });
+        setSyncInfo({ status: 'Loaded local 已加载本地数据', lastSync: local.lastUpdated });
         setSyncHeader('Local','Loaded from local');
 
         (async () => {
             const init = await initFirebaseIfPossible();
             if (init.ok){
                 setStorageMode('Cloud');
-                setSyncInfo(s => ({...s, status:'Connected'}));
+                setSyncInfo(s => ({...s, status:'Connected 已连接'}));
 
                 // On boot: ALWAYS pull from cloud if it exists (safe for all users)
                 // Never push during boot - owner can manually sync if needed
@@ -783,7 +783,7 @@ function FamilyMealPlannerApp(){
                 if (cloud && cloud.recipes && cloud.recipes.length){
                     setRecipes(cloud.recipes);
                     writeLocal(cloud.recipes);
-                    setSyncInfo({ status:'Synced from cloud', lastSync: cloud.lastUpdated });
+                    setSyncInfo({ status:'Synced from cloud 已从云端同步', lastSync: cloud.lastUpdated });
                 } else {
                     // No cloud data - keep local, owner can push later via Sync button
                     setSyncInfo({ status:'No cloud data (use Sync to upload)', lastSync: null });
@@ -810,7 +810,7 @@ function FamilyMealPlannerApp(){
         writeLocal(recipes);
         if (storageMode === 'Cloud' && cloudEnabled && !preventLoop && isOwner){
             writeCloud(recipes).then(()=>{
-                setSyncInfo(s=> ({...s, status: 'Pushed to cloud (Owner)', lastSync: nowIso()}));
+                setSyncInfo(s=> ({...s, status: 'Pushed to cloud (Owner) 已推送到云端（所有者）', lastSync: nowIso()}));
             }).catch(e=> console.error('Cloud write failed', e));
         }
     }, [recipes, isOwner]);
@@ -868,7 +868,7 @@ const isYouTubeShort = (url) => {
                 setRecipes(prev => [...(prev||[]), newRecipe]);
             }
             setShowForm(false); resetForm();
-        } catch(e){ console.error('Save error:', e); alert('Error saving recipe.'); }
+        } catch(e){ console.error('Save error:', e); alert('Error saving recipe. 保存食谱时出错。'); }
     };
 
     const editRecipe = (recipe) => {
@@ -890,13 +890,13 @@ const isYouTubeShort = (url) => {
 
     const deleteRecipe = (id) => {
         if (!id) return;
-        if (window.confirm('Delete this recipe?')) {
+        if (window.confirm('Delete this recipe? 删除此食谱？')) {
             setRecipes(prev => (prev||[]).filter(r => r?.id !== id));
         }
     };
 
     const exportRecipes = () => {
-        if (!recipes || recipes.length===0){ alert('No recipes to export.'); return; }
+        if (!recipes || recipes.length===0){ alert('No recipes to export. 没有可导出的食谱。'); return; }
         const dataStr = JSON.stringify(recipes, null, 2);
         const url = URL.createObjectURL(new Blob([dataStr], {type:'application/json'}));
         const a = document.createElement('a');
@@ -912,8 +912,8 @@ const isYouTubeShort = (url) => {
         reader.onload = (ev) => {
             try {
                 const imported = JSON.parse(ev.target.result);
-                if (!Array.isArray(imported) || imported.length===0){ alert('No valid recipes in file.'); return; }
-                if (window.confirm(`Import ${imported.length} recipe(s) and replace current list?`)){
+                if (!Array.isArray(imported) || imported.length===0){ alert('No valid recipes in file. 文件中没有有效的食谱。'); return; }
+                if (window.confirm(`Import ${imported.length} recipe(s) and replace current list? 导入 ${imported.length} 个食谱并替换当前列表？`)){
                     const withIds = imported.map((r,i)=>{
                         const migrated = migrateRecipeData(r);
                         return { 
@@ -950,9 +950,9 @@ const isYouTubeShort = (url) => {
         const init = await initFirebaseIfPossible(configJson ? JSON.parse(configJson) : null);
         if (init.ok){
             setStorageMode('Cloud');
-            setSyncInfo({ status:'Connected', lastSync: nowIso() });
+            setSyncInfo({ status:'Connected 已连接', lastSync: nowIso() });
         } else {
-            alert('Cloud not available. Please open Settings and paste a valid Firebase config.');
+            alert('Cloud not available. Please open Settings and paste a valid Firebase config. 云端不可用。请打开设置并粘贴有效的Firebase配置。');
             setStorageMode('Local');
         }
     };
@@ -969,22 +969,22 @@ const isYouTubeShort = (url) => {
                 // Pull from cloud (everyone can do this)
                 setRecipes(cloud.recipes);
                 writeLocal(cloud.recipes);
-                setSyncInfo({ status:'Synced from cloud', lastSync: cloud.lastUpdated });
+                setSyncInfo({ status:'Synced from cloud 已从云端同步', lastSync: cloud.lastUpdated });
             } else if (isOwner) {
                 // Push to cloud (only owner can do this)
                 await writeCloud(recipes);
-                setSyncInfo({ status:'Pushed to cloud (Owner)', lastSync: nowIso() });
+                setSyncInfo({ status:'Pushed to cloud (Owner) 已推送到云端（所有者）', lastSync: nowIso() });
             } else {
                 // Non-owner with newer local data - just pull cloud to stay consistent
                 setRecipes(cloud.recipes);
                 writeLocal(cloud.recipes);
-                setSyncInfo({ status:'Synced from cloud (read-only)', lastSync: cloud.lastUpdated });
-                alert('Your local changes were not saved to cloud. Only the owner can modify the shared recipes.');
+                setSyncInfo({ status:'Synced from cloud (read-only) 已从云端同步（只读）', lastSync: cloud.lastUpdated });
+                alert('Your local changes were not saved to cloud. Only the owner can modify the shared recipes. 您的本地更改未保存到云端。只有所有者才能修改共享食谱。');
             }
         } else if (isOwner) {
             // No cloud data yet - owner can seed it
             await writeCloud(recipes);
-            setSyncInfo({ status:'Seeded cloud (Owner)', lastSync: nowIso() });
+            setSyncInfo({ status:'Seeded cloud (Owner) 已初始化云端（所有者）', lastSync: nowIso() });
         } else {
             alert('No cloud data available yet. Ask the owner to sync first.');
         }
@@ -1004,12 +1004,12 @@ const isYouTubeShort = (url) => {
                 React.createElement('div', { className:'header-gradient' },
                     React.createElement('div', { className:'header-container' },
                         React.createElement('div', null,
-                            React.createElement('h1', { className:'header-title' }, React.createElement(ChefHat,{style:{width:'2.2rem',height:'2.2rem'}}), 'Family Meal Planner', React.createElement(StorageBadge)),
-                            React.createElement('p', { className:'header-subtitle' }, 'Recipe organizer • Local-first • Optional cloud sync')
+                            React.createElement('h1', { className:'header-title' }, React.createElement(ChefHat,{style:{width:'2.2rem',height:'2.2rem'}}), 'Family Meal Planner 家庭食谱', React.createElement(StorageBadge)),
+                            React.createElement('p', { className:'header-subtitle' }, 'Recipe organizer 食谱管理 • Local-first 本地优先 • Cloud sync 云同步')
                         ),
                         (recipes && recipes.length>0) && React.createElement('div', { className:'recipe-counter' },
                             React.createElement('div', { className:'recipe-count' }, recipes.length),
-                            React.createElement('div', { className:'recipe-label' }, `Recipe${recipes.length!==1 ? 's':''}`),
+                            React.createElement('div', { className:'recipe-label' }, `Recipe${recipes.length!==1 ? 's':''} 食谱`),
                             React.createElement('div', { className:'recipe-status' }, syncInfo?.status || '')
                         )
                     )
@@ -1025,24 +1025,24 @@ const isYouTubeShort = (url) => {
                                 React.createElement('button', { 
                                     onClick: () => setShowForm(true), 
                                     className: 'btn btn-primary' 
-                                }, React.createElement(Plus), 'Add Recipe')
+                                }, React.createElement(Plus), 'Add Recipe 添加食谱')
                             :
                                 React.createElement('button', { 
                                     onClick: handleOwnerAccess, 
                                     className: 'btn btn-neutral',
                                     title: 'Get permission to add/edit recipes'
-                                }, React.createElement(Shield), 'Request Edit Access'),
+                                }, React.createElement(Shield), 'Request Edit Access 请求编辑权限'),
                             
                             // Export (everyone can export)
-                            React.createElement('button', { onClick: exportRecipes, className:'btn btn-secondary', title:'Export all recipes as JSON' }, React.createElement(Download), 'Export'),
+                            React.createElement('button', { onClick: exportRecipes, className:'btn btn-secondary', title:'Export all recipes as JSON 导出所有食谱' }, React.createElement(Download), 'Export 导出'),
                             
                             // Import - only for owners
-                            isOwner && React.createElement('label', { className:'btn btn-accent' }, React.createElement(Upload), 'Import',
+                            isOwner && React.createElement('label', { className:'btn btn-accent' }, React.createElement(Upload), 'Import 导入',
                                 React.createElement('input', { type:'file', accept:'.json', onChange: importRecipes, className:'hidden' }))
                         ),
                         React.createElement('div', { className:'form-group' },
                             React.createElement(Users, null),
-                            React.createElement('span', { style:{ color:'#6b7280', fontWeight:500 } }, 'Family Size:'),
+                            React.createElement('span', { style:{ color:'#6b7280', fontWeight:500 } }, 'Family Size 家庭人数:'),
                             React.createElement('input', { type:'number', min:'1', max:'20', value: familySize, onChange:(e)=> setFamilySize(Number(e.target.value)), style:{ width:'4rem', textAlign:'center', border:'1px solid #d1d5db', borderRadius:'0.5rem', padding:'0.25rem 0.5rem' } })
                         )
                     ),
@@ -1051,24 +1051,24 @@ const isYouTubeShort = (url) => {
                     isOwner && React.createElement('div', { style: { marginTop: '1rem' } },
                         React.createElement('div', { className: 'owner-indicator' },
                             React.createElement(Shield, { style: { width: '16px', height: '16px' } }),
-                            'Owner Mode: Editing Enabled'
+                            'Owner Mode 管理员模式: Editing Enabled 编辑已启用'
                         )
                     ),
 
                     // Middle section: App-level storage controls
                     React.createElement('div', { style:{ marginTop:'1rem', display:'flex', gap:'0.75rem', flexWrap:'wrap', alignItems:'center', justifyContent:'space-between' } },
                         React.createElement('div', { style:{ display:'flex', gap:'0.5rem', alignItems:'center' } },
-                            React.createElement('span', { className:'small' }, 'Storage:'),
+                            React.createElement('span', { className:'small' }, 'Storage 存储:'),
                             React.createElement('select', { className:'form-input', style:{ width:'10rem' }, value: storageMode, onChange: async (e)=>{
                                 const val = e.target.value;
                                 if (val === 'Cloud'){ await tryEnableCloud(); }
                                 else { setStorageMode('Local'); setSyncInfo(s=> ({...s, status:'Local only'})); }
                             }},
-                                React.createElement('option', { value:'Local' }, 'Local'),
-                                React.createElement('option', { value:'Cloud' }, 'Cloud (Firebase)')
+                                React.createElement('option', { value:'Local' }, 'Local 本地'),
+                                React.createElement('option', { value:'Cloud' }, 'Cloud 云端 (Firebase)')
                             ),
-                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=> setShowSettings(true) }, React.createElement(Gear), React.createElement('span', null, 'Settings')),
-                            React.createElement('button', { className:'btn btn-neutral', onClick: onClickSyncNow }, React.createElement(RefreshCw), React.createElement('span', null, 'Sync now'))
+                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=> setShowSettings(true) }, React.createElement(Gear), React.createElement('span', null, 'Settings 设置')),
+                            React.createElement('button', { className:'btn btn-neutral', onClick: onClickSyncNow }, React.createElement(RefreshCw), React.createElement('span', null, 'Sync 同步'))
                         ),
                         React.createElement('div', { className:'small' }, syncInfo?.lastSync ? ('Last sync: ' + new Date(syncInfo.lastSync).toLocaleString()) : '')
                     ),
@@ -1076,9 +1076,9 @@ const isYouTubeShort = (url) => {
                     // Search and Filter controls
                     React.createElement('div', { style:{ marginTop:'1rem', display:'flex', gap:'1rem', alignItems:'center', justifyContent:'space-between' } },
                         React.createElement('div', { className:'search-container' },
-                            React.createElement('input', { type:'text', placeholder:'Search recipes or ingredients...', value:searchTerm, onChange:(e)=> setSearchTerm(e.target.value), className:'search-input' })
+                            React.createElement('input', { type:'text', placeholder:'Search recipes or ingredients 搜索食谱或食材...', value:searchTerm, onChange:(e)=> setSearchTerm(e.target.value), className:'search-input' })
                         ),
-                        React.createElement('button', { onClick:()=> setShowFilters(!showFilters), className:`btn btn-filter ${showFilters ? 'active' : ''}`, title:'Show/hide filters' }, React.createElement(Filter), React.createElement('span', null, 'Filters'))
+                        React.createElement('button', { onClick:()=> setShowFilters(!showFilters), className:`btn btn-filter ${showFilters ? 'active' : ''}`, title:'Show/hide filters 显示/隐藏筛选' }, React.createElement(Filter), React.createElement('span', null, 'Filters 筛选'))
                     )
                 ),
 
@@ -1087,15 +1087,15 @@ const isYouTubeShort = (url) => {
                     React.createElement('div', { className:'filter-panel' },
                         React.createElement('div', { className:'filter-grid' },
                             React.createElement('select', { value:filters.category, onChange:(e)=> setFilters({...filters, category:e.target.value}), className:'form-input' },
-                                React.createElement('option', { value:'' }, 'All Categories'),
+                                React.createElement('option', { value:'' }, 'All Categories 所有类别'),
                                 categories.map(cat => React.createElement('option', { key:cat, value:cat }, cat))
                             ),
                             React.createElement('select', { value:filters.type, onChange:(e)=> setFilters({...filters, type:e.target.value}), className:'form-input' },
-                                React.createElement('option', { value:'' }, 'All Types'),
+                                React.createElement('option', { value:'' }, 'All Types 所有类型'),
                                 allTypes.map(t => React.createElement('option', { key:t, value:t }, t))
                             ),
                             React.createElement('select', { value:filters.purpose, onChange:(e)=> setFilters({...filters, purpose:e.target.value}), className:'form-input' },
-                                React.createElement('option', { value:'' }, 'All Purposes'),
+                                React.createElement('option', { value:'' }, 'All Purposes 所有用途'),
                                 allPurposes.map(p => React.createElement('option', { key:p, value:p }, p))
                             )
                         )
@@ -1105,21 +1105,21 @@ const isYouTubeShort = (url) => {
                 // Add/Edit Modal
                 showForm && React.createElement('div', { className:'modal-overlay' },
                     React.createElement('div', { className:'modal-container' },
-                        React.createElement('div', { className:'modal-header' }, React.createElement('h2', { className:'modal-title' }, editingId ? 'Edit Recipe' : 'Add New Recipe') ),
+                        React.createElement('div', { className:'modal-header' }, React.createElement('h2', { className:'modal-title' }, editingId ? 'Edit Recipe 编辑食谱' : 'Add New Recipe 添加新食谱') ),
                         React.createElement('div', { className:'modal-body' },
                             React.createElement('div', { className:'form-grid', style:{ display:'grid', gap:'1rem', gridTemplateColumns:'repeat(auto-fit, minmax(250px, 1fr))' } },
                                 React.createElement('div', null,
-                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Recipe Name'),
-                                    React.createElement('input', { type:'text', required:true, value: currentRecipe.name, onChange:(e)=> setCurrentRecipe({...currentRecipe, name:e.target.value}), className:'form-input', placeholder:'Enter recipe name' })
+                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Recipe Name 食谱名称'),
+                                    React.createElement('input', { type:'text', required:true, value: currentRecipe.name, onChange:(e)=> setCurrentRecipe({...currentRecipe, name:e.target.value}), className:'form-input', placeholder:'Enter recipe name 输入食谱名称' })
                                 ),
                                 React.createElement('div', null,
-                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'YouTube Video URL'),
+                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'YouTube Video URL 视频链接'),
                                     React.createElement('input', { type:'url', value: currentRecipe.videoUrl, onChange:(e)=> setCurrentRecipe({...currentRecipe, videoUrl:e.target.value}), className:'form-input', placeholder:'https://www.youtube.com/watch?v=...' })
                                 ),
                                 React.createElement('div', null,
-                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Category'),
+                                    React.createElement('label', { className:'small', style:{display:'block',marginBottom:'0.25rem'} }, 'Category 类别'),
                                     React.createElement('select', { value: currentRecipe.category, onChange:(e)=> setCurrentRecipe({...currentRecipe, category:e.target.value}), className:'form-input' },
-                                        React.createElement('option', { value:'' }, 'Select Category'),
+                                        React.createElement('option', { value:'' }, 'Select Category 选择类别'),
                                         categories.map(cat => React.createElement('option', { key:cat, value:cat }, cat))
                                     )
                                 )
@@ -1128,69 +1128,69 @@ const isYouTubeShort = (url) => {
                             // Types (Multi-tag input)
                             React.createElement('div', { style:{ marginTop:'1rem' } },
                                 React.createElement(TagInput, {
-                                    label: 'Types/Styles (e.g., Pasta, Main Course, Quick & Easy)',
+                                    label: 'Types/Styles 类型 (e.g., Pasta 意面, Main Course 主菜, Quick & Easy 快手菜)',
                                     values: currentRecipe.types,
                                     onChange: (newTypes) => setCurrentRecipe({...currentRecipe, types: newTypes}),
                                     suggestions: typeSuggestions,
-                                    placeholder: 'Add type or style...'
+                                    placeholder: 'Add type or style 添加类型...'
                                 })
                             ),
                             
                             // Purposes (Multi-tag input)
                             React.createElement('div', { style:{ marginTop:'1rem' } },
                                 React.createElement(TagInput, {
-                                    label: 'Purposes/Occasions (e.g., Breakfast, Dinner, Holiday)',
+                                    label: 'Purposes/Occasions 用途 (e.g., Breakfast 早餐, Dinner 晚餐, Holiday 节日)',
                                     values: currentRecipe.purposes,
                                     onChange: (newPurposes) => setCurrentRecipe({...currentRecipe, purposes: newPurposes}),
                                     suggestions: purposeSuggestions,
-                                    placeholder: 'Add purpose or occasion...'
+                                    placeholder: 'Add purpose or occasion 添加用途...'
                                 })
                             ),
                             
                             // Ingredients
                             React.createElement('div', { style:{ marginTop:'1rem' } },
                                 React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' } },
-                                    React.createElement('h3', { className:'section-title-small' }, 'Ingredients'),
-                                    React.createElement('button', { onClick: ()=> setCurrentRecipe({...currentRecipe, ingredients:[...currentRecipe.ingredients, {name:'',quantity:'',unit:''}] }), className:'btn btn-primary btn-sm' }, React.createElement(Plus), 'Add Ingredient')
+                                    React.createElement('h3', { className:'section-title-small' }, 'Ingredients 食材'),
+                                    React.createElement('button', { onClick: ()=> setCurrentRecipe({...currentRecipe, ingredients:[...currentRecipe.ingredients, {name:'',quantity:'',unit:''}] }), className:'btn btn-primary btn-sm' }, React.createElement(Plus), 'Add 添加')
                                 ),
                                 currentRecipe.ingredients.map((ing, idx)=> React.createElement('div', { key:idx, style:{ display:'flex', gap:'0.5rem', marginBottom:'0.5rem', background:'#f9fafb', padding:'0.75rem', borderRadius:'0.75rem', flexWrap:'wrap' } },
-                                    React.createElement('input', { type:'text', placeholder:'Ingredient name', value: ing.name, onChange:(e)=>{
+                                    React.createElement('input', { type:'text', placeholder:'Ingredient name 食材名称', value: ing.name, onChange:(e)=>{
                                         const arr = currentRecipe.ingredients.slice(); arr[idx] = {...ing, name:e.target.value}; setCurrentRecipe({...currentRecipe, ingredients:arr});
                                     }, className:'form-input', style:{ flex:'1 1 200px' } }),
-                                    React.createElement('input', { type:'number', step:'0.1', placeholder:'Quantity', value: ing.quantity, onChange:(e)=>{
+                                    React.createElement('input', { type:'number', step:'0.1', placeholder:'Quantity 用量', value: ing.quantity, onChange:(e)=>{
                                         const arr = currentRecipe.ingredients.slice(); arr[idx] = {...ing, quantity:e.target.value}; setCurrentRecipe({...currentRecipe, ingredients:arr});
                                     }, className:'form-input', style:{ flex:'1 1 120px' } }),
                                     React.createElement('select', { value: ing.unit, onChange:(e)=>{
                                         const arr = currentRecipe.ingredients.slice(); arr[idx] = {...ing, unit:e.target.value}; setCurrentRecipe({...currentRecipe, ingredients:arr});
                                     }, className:'form-input', style:{ flex:'1 1 120px' } },
-                                        React.createElement('option', { value:'' }, 'Unit'),
+                                        React.createElement('option', { value:'' }, 'Unit 单位'),
                                         units.map(u => React.createElement('option', { key:u, value:u }, u))
                                     ),
                                     React.createElement('button', { onClick: ()=>{
                                         const arr = currentRecipe.ingredients.slice(); arr.splice(idx,1); setCurrentRecipe({...currentRecipe, ingredients:arr});
-                                    }, className:'btn btn-neutral btn-sm' }, React.createElement(Trash2), 'Remove')
+                                    }, className:'btn btn-neutral btn-sm' }, React.createElement(Trash2), 'Remove 删除')
                                 ))
                             ),
                             // Instructions
                             React.createElement('div', { style:{ marginTop:'1rem' } },
                                 React.createElement('div', { style:{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:'0.5rem' } },
-                                    React.createElement('h3', { className:'section-title-small' }, 'Instructions'),
-                                    React.createElement('button', { onClick: ()=> setCurrentRecipe({...currentRecipe, instructions:[...currentRecipe.instructions, ''] }), className:'btn btn-secondary btn-sm' }, React.createElement(Plus), 'Add Step')
+                                    React.createElement('h3', { className:'section-title-small' }, 'Instructions 步骤'),
+                                    React.createElement('button', { onClick: ()=> setCurrentRecipe({...currentRecipe, instructions:[...currentRecipe.instructions, ''] }), className:'btn btn-secondary btn-sm' }, React.createElement(Plus), 'Add Step 添加步骤')
                                 ),
                                 currentRecipe.instructions.map((step, idx)=> React.createElement('div', { key:idx, style:{ display:'flex', gap:'0.5rem', marginBottom:'0.5rem', background:'#f9fafb', padding:'0.75rem', borderRadius:'0.75rem', alignItems:'flex-start', flexWrap:'wrap' } },
                                     React.createElement('span', { className:'badge badge-warn' }, idx+1),
-                                    React.createElement('textarea', { rows:2, placeholder:'Describe this step...', value: step, onChange:(e)=>{
+                                    React.createElement('textarea', { rows:2, placeholder:'Describe this step 描述步骤...', value: step, onChange:(e)=>{
                                         const arr = currentRecipe.instructions.slice(); arr[idx] = e.target.value; setCurrentRecipe({...currentRecipe, instructions:arr});
                                     }, className:'form-input', style:{ flex:'1 1 300px', minHeight:'60px', resize:'vertical' } }),
                                     React.createElement('button', { onClick: ()=>{
                                         const arr = currentRecipe.instructions.slice(); arr.splice(idx,1); setCurrentRecipe({...currentRecipe, instructions:arr});
-                                    }, className:'btn btn-neutral btn-sm' }, React.createElement(Trash2), 'Remove')
+                                    }, className:'btn btn-neutral btn-sm' }, React.createElement(Trash2), 'Remove 删除')
                                 ))
                             )
                         ),
                         React.createElement('div', { className:'modal-actions' },
-                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=>{ setShowForm(false); resetForm(); } }, 'Cancel'),
-                            React.createElement('button', { className:'btn btn-save', onClick: handleSubmit }, editingId ? 'Update Recipe' : 'Save Recipe')
+                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=>{ setShowForm(false); resetForm(); } }, 'Cancel 取消'),
+                            React.createElement('button', { className:'btn btn-save', onClick: handleSubmit }, editingId ? 'Update Recipe 更新食谱' : 'Save Recipe 保存食谱')
                         )
                     )
                 ),
@@ -1198,14 +1198,14 @@ const isYouTubeShort = (url) => {
                 // Settings Modal
                 showSettings && React.createElement('div', { className:'modal-overlay' },
                     React.createElement('div', { className:'modal-container' },
-                        React.createElement('div', { className:'modal-header' }, React.createElement('h2', { className:'modal-title' }, 'Cloud Sync Settings (Firebase)') ),
+                        React.createElement('div', { className:'modal-header' }, React.createElement('h2', { className:'modal-title' }, 'Cloud Sync Settings 云同步设置 (Firebase)') ),
                         React.createElement('div', { className:'modal-body' },
-                            React.createElement('p', { className:'small' }, 'Paste your Firebase web config JSON here (Project settings → General → Your apps → SDK setup & configuration → Config).'),
+                            React.createElement('p', { className:'small' }, 'Paste your Firebase web config JSON here 在此粘贴Firebase配置JSON (Project settings → General → Your apps → SDK setup & configuration → Config).'),
                             React.createElement('textarea', { className:'form-input', rows:8, placeholder:'{\n  "apiKey": "...",\n  "authDomain":"...",\n  "projectId":"...",\n  "appId":"..."\n}', value: configJson, onChange:(e)=> setConfigJson(e.target.value) }),
-                            React.createElement('p', { className:'small' }, 'Tip: Leave blank to keep using the last saved config. We use Anonymous Auth and store your recipes in Firestore under collection "familyMealPlanner" with your anonymous UID.')
+                            React.createElement('p', { className:'small' }, 'Tip 提示: Leave blank to keep using the last saved config 留空则使用上次保存的配置. We use Anonymous Auth and store your recipes in Firestore under collection "familyMealPlanner" with your anonymous UID.')
                         ),
                         React.createElement('div', { className:'modal-actions' },
-                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=> setShowSettings(false) }, 'Close'),
+                            React.createElement('button', { className:'btn btn-neutral', onClick: ()=> setShowSettings(false) }, 'Close 关闭'),
                             React.createElement('button', { className:'btn btn-save', onClick: async ()=>{
                                 try{
                                     if (configJson && configJson.trim()){
@@ -1213,10 +1213,10 @@ const isYouTubeShort = (url) => {
                                         localStorage.setItem('fmp_firebase_config', configJson.trim());
                                     }
                                     const res = await initFirebaseIfPossible(configJson ? JSON.parse(configJson) : null);
-                                    if (res.ok){ setStorageMode('Cloud'); setSyncInfo({ status:'Connected', lastSync: nowIso() }); alert('Connected!'); }
-                                    else { alert('Could not connect. Please verify the config.'); }
-                                } catch(e){ alert('Invalid JSON.'); }
-                            } }, 'Save & Connect')
+                                    if (res.ok){ setStorageMode('Cloud'); setSyncInfo({ status:'Connected 已连接', lastSync: nowIso() }); alert('Connected! 已连接！'); }
+                                    else { alert('Could not connect. Please verify the config. 无法连接。请检查配置。'); }
+                                } catch(e){ alert('Invalid JSON. JSON格式无效。'); }
+                            } }, 'Save & Connect 保存并连接')
                         )
                     )
                 ),
@@ -1226,11 +1226,11 @@ const isYouTubeShort = (url) => {
                     filteredRecipes.length === 0 ?
                         React.createElement('div', { className:'empty-state' },
                             React.createElement('div', { className:'empty-icon' }, '🍳'),
-                            React.createElement('h3', { className:'empty-title' }, 'No recipes found'),
-                            React.createElement('p', { className:'empty-description' }, (!recipes || recipes.length===0) ? 'Add your first recipe to get started!' : 'Try adjusting your search or filters'),
+                            React.createElement('h3', { className:'empty-title' }, 'No recipes found 未找到食谱'),
+                            React.createElement('p', { className:'empty-description' }, (!recipes || recipes.length===0) ? 'Add your first recipe to get started! 添加您的第一个食谱！' : 'Try adjusting your search or filters 请调整搜索条件或筛选器'),
                             (!recipes || recipes.length===0) && React.createElement('div', { className:'info-box' },
-                                React.createElement('div', { className:'info-header' }, 'Data Storage & Backup'),
-                                React.createElement('p', { className:'info-text' }, 'Your recipes are saved locally. Switch to Cloud to sync across devices. Use Export/Import to back up or migrate.')
+                                React.createElement('div', { className:'info-header' }, 'Data Storage & Backup 数据存储与备份'),
+                                React.createElement('p', { className:'info-text' }, 'Your recipes are saved locally. Switch to Cloud to sync across devices. Use Export/Import to back up or migrate. 您的食谱保存在本地。切换到云端可跨设备同步。使用导出/导入功能来备份或迁移。')
                             )
                         )
                     :
@@ -1274,8 +1274,8 @@ return React.createElement('div', { key: recipeId, className:'recipe-card' },
                                             React.createElement('h3', { className: 'recipe-title' + (isExpanded ? '' : ' line-clamp-2') }, recipeName),
                                             // Only show edit/delete buttons if user is owner
                                             isOwner && React.createElement('div', { className:'recipe-actions' },
-                                                React.createElement('button', { onClick: ()=> editRecipe(recipe), className:'action-btn edit-btn', title:'Edit recipe' }, React.createElement(Edit2)),
-                                                React.createElement('button', { onClick: ()=> deleteRecipe(recipeId), className:'action-btn trash-btn', title:'Delete recipe' }, React.createElement(Trash2))
+                                                React.createElement('button', { onClick: ()=> editRecipe(recipe), className:'action-btn edit-btn', title:'Edit recipe 编辑食谱' }, React.createElement(Edit2)),
+                                                React.createElement('button', { onClick: ()=> deleteRecipe(recipeId), className:'action-btn trash-btn', title:'Delete recipe 删除食谱' }, React.createElement(Trash2))
                                             )
                                         ),
                                         React.createElement('div', { className:'recipe-tags' },
@@ -1285,7 +1285,7 @@ return React.createElement('div', { key: recipeId, className:'recipe-card' },
                                         ),
                                         React.createElement('div', { className:'recipe-section' },
                                             React.createElement('div', { className:'section-header-small' },
-                                                React.createElement('h4', { className:'section-title-small' }, `Ingredients (for ${familySize} people)`)
+                                                React.createElement('h4', { className:'section-title-small' }, `Ingredients 食材 (for ${familySize} people 人份)`)
                                             ),
                                             React.createElement('div', { className:'ingredient-list' },
                                                 shownIngredients.map((ing, idx)=>
@@ -1294,13 +1294,13 @@ return React.createElement('div', { key: recipeId, className:'recipe-card' },
                                                         React.createElement('span', { className:'ingredient-amount' }, `${String(ing?.quantity || '0')} ${String(ing?.unit || '')}`)
                                                     )
                                                 ),
-                                                (!isExpanded && recipeIngredients.length>4) && React.createElement('div', { className:'more-items' }, `+${recipeIngredients.length-4} more ingredients...`)
+                                                (!isExpanded && recipeIngredients.length>4) && React.createElement('div', { className:'more-items' }, `+${recipeIngredients.length-4} more ingredients 更多食材...`)
                                             )
                                         ),
                                         React.createElement('div', { className:'recipe-section' },
                                             React.createElement('div', { className:'section-header-small' },
                                                 React.createElement(Clock, { style:{width:'20px',height:'20px'} }),
-                                                React.createElement('h4', { className:'section-title-small' }, `Instructions (${recipeInstructions.length} step${recipeInstructions.length!==1?'s':''})`)
+                                                React.createElement('h4', { className:'section-title-small' }, `Instructions 步骤 (${recipeInstructions.length} step${recipeInstructions.length!==1?'s':''})`)
                                             ),
                                             isExpanded
                                                 ? React.createElement('ol', { className:'instruction-list', style:{ paddingLeft: '1.2rem', margin: 0, display:'flex', flexDirection:'column', gap:'0.35rem' } },
@@ -1309,7 +1309,7 @@ return React.createElement('div', { key: recipeId, className:'recipe-card' },
                                                     )
                                                 )
                                                 : React.createElement('p', { className:'instruction-preview line-clamp-3' },
-                                                    String(recipeInstructions[0] || 'No instructions provided'),
+                                                    String(recipeInstructions[0] || 'No instructions provided 暂无步骤'),
                                                     recipeInstructions.length>1 && '...'
                                                 )
                                         )
@@ -1319,8 +1319,8 @@ return React.createElement('div', { key: recipeId, className:'recipe-card' },
                                             className:'btn btn-neutral btn-sm',
                                             onClick: ()=> toggleExpand(recipeId),
                                             'aria-expanded': isExpanded,
-                                            title: isExpanded ? 'Collapse recipe' : 'Expand to see full content'
-                                        }, isExpanded ? 'Show less' : 'Show more')
+                                            title: isExpanded ? 'Collapse recipe 收起食谱' : 'Expand to see full content 展开查看完整内容'
+                                        }, isExpanded ? 'Show less 收起' : 'Show more 展开')
                                     )
                                 );
                             })
