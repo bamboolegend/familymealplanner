@@ -1096,7 +1096,7 @@ const isYouTubeShort = (url) => {
                     // Search and Filter controls
                     React.createElement('div', { style:{ marginTop:'1rem', display:'flex', gap:'1rem', alignItems:'center', justifyContent:'space-between' } },
                         React.createElement('div', { className:'search-container' },
-                            React.createElement('input', { type:'text', placeholder:'Search recipes or ingredients 搜索食谱或食材...', value:searchTerm, onChange:(e)=> setSearchTerm(e.target.value), className:'search-input' })
+                            React.createElement('input', { type:'text', placeholder:'Search 搜索食谱或食材...', value:searchTerm, onChange:(e)=> setSearchTerm(e.target.value), className:'search-input' })
                         ),
                         React.createElement('button', { onClick:()=> setShowFilters(!showFilters), className:`btn btn-filter ${showFilters ? 'active' : ''}`, title:'Show/hide filters 显示/隐藏筛选' }, React.createElement(Filter), React.createElement('span', null, 'Filters 筛选'))
                     )
