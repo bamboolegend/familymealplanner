@@ -954,7 +954,11 @@ const isYouTubeShort = (url) => {
     const scaleIngredients = (ings, originalSize=4) => {
         if (!Array.isArray(ings)) return [];
         const scale = familySize / originalSize;
-        return ings.map(ing => ({ ...ing, quantity: ing?.quantity ? (parseFloat(ing.quantity)*scale).toFixed(1) : '0' }));
+        return ings.map(ing => {
+            if (!ing?.quantity) return { ...ing, quantity: '0' };
+            const num = parseFloat(ing.quantity);
+            return { ...ing, quantity: isNaN(num) ? ing.quantity : (num * scale).toFixed(1) };
+        });
     };
 
     // Header sync indicator
