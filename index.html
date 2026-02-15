@@ -1101,7 +1101,7 @@ const isYouTubeShort = (url) => {
                     React.createElement('div', { style:{ marginTop:'1rem', display:'flex', gap:'1rem', alignItems:'center', justifyContent:'space-between' } },
                         React.createElement('div', { className:'search-container', style:{ position:'relative' } },
                             React.createElement('input', { type:'text', placeholder:'Search 搜索食谱或食材...', value:searchTerm, onChange:(e)=> setSearchTerm(e.target.value), className:'search-input' }),
-                            searchTerm && React.createElement('button', { onClick:()=> setSearchTerm(''), title:'Clear search 清除搜索', style:{ position:'absolute', right:'0.75rem', top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:'1.25rem', color:'#9ca3af', padding:'0.25rem' } }, '\u00D7')
+                            searchTerm && React.createElement('button', { onClick:()=> setSearchTerm(''), title:'Clear search 清除搜索', style:{ position:'absolute', right:'0.5rem', top:'50%', transform:'translateY(-50%)', background:'#ef4444', border:'none', cursor:'pointer', fontSize:'0.85rem', color:'white', padding:'0.15rem 0.45rem', borderRadius:'50%', fontWeight:'bold', lineHeight:'1.2' } }, '\u00D7')
                         ),
                         React.createElement('button', { onClick:()=> setShowFilters(!showFilters), className:`btn btn-filter ${showFilters ? 'active' : ''}`, title:'Show/hide filters 显示/隐藏筛选' }, React.createElement(Filter), React.createElement('span', null, 'Filters 筛选'))
                     )
